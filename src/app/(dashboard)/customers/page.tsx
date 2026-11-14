@@ -641,7 +641,9 @@ export default function CustomersPage() {
                             <div className="flex items-center gap-1.5 font-medium text-foreground truncate">
                               <span className="truncate">{c.username}</span>
                               {c.isVerified && (
-                                <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" title="Verified Customer" />
+                                <span title="Verified Customer">
+                                  <ShieldCheck className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                </span>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
