@@ -183,38 +183,41 @@ export default function CustomersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                customers.map((c) => (
-                  <TableRow key={c.userId}>
-                    <TableCell className="font-medium text-foreground">
-                      {c.username || "Customer"}
-                    </TableCell>
+                customers.map((c) => {
+                  const count = c.orderCount ?? c.totalOrders ?? 0;
+                  return (
+                    <TableRow key={c.userId}>
+                      <TableCell className="font-medium text-foreground">
+                        {c.username || "Customer"}
+                      </TableCell>
 
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {c.phone || "-"}
-                    </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {c.phone || "-"}
+                      </TableCell>
 
-                    <TableCell className="text-xs text-muted-foreground">
-                      {c.email || "-"}
-                    </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {c.email || "-"}
+                      </TableCell>
 
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={c.orderCount > 0 ? "secondary" : "outline"}
-                        className="font-semibold text-xs"
-                      >
-                        {c.orderCount === 1 ? "1 order" : `${c.orderCount} orders`}
-                      </Badge>
-                    </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={count > 0 ? "secondary" : "outline"}
+                          className="font-semibold text-xs"
+                        >
+                          {count === 1 ? "1 order" : `${count} orders`}
+                        </Badge>
+                      </TableCell>
 
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(c.totalSpent)}
-                    </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(c.totalSpent)}
+                      </TableCell>
 
-                    <TableCell className="text-right text-xs text-muted-foreground">
-                      {formatDate(c.lastOrderAt)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {formatDate(c.lastOrderAt)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

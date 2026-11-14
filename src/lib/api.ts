@@ -1131,7 +1131,8 @@ export interface CustomerOrderSummary {
   username: string;
   phone: string;
   email: string;
-  orderCount: number;
+  orderCount?: number;
+  totalOrders?: number;
   totalSpent: number;
   lastOrderAt: string | null;
 }
