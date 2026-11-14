@@ -1131,24 +1131,9 @@ export interface CustomerOrderSummary {
   username: string;
   phone: string;
   email: string;
-  isVerified: boolean;
-  registeredAt: string;
-  totalOrders: number;
-  deliveredOrders: number;
-  cancelledOrders: number;
-  activeOrders: number;
+  orderCount: number;
   totalSpent: number;
-  firstOrderAt: string | null;
   lastOrderAt: string | null;
-}
-
-export interface CustomerStats {
-  totalCustomers: number;
-  orderingCustomers: number;
-  repeatCustomers: number;
-  frequentCustomers: number;
-  totalOrdersPlaced: number;
-  totalRevenue: number;
 }
 
 export interface CustomersListResponse {
@@ -1160,67 +1145,6 @@ export interface CustomersListResponse {
     total: number;
     totalPages: number;
   };
-  stats: CustomerStats;
-}
-
-export interface CustomerOrderItem {
-  productName: string;
-  quantity: number;
-  subtotal: number;
-}
-
-export interface CustomerOrderHistoryItem {
-  id: string;
-  orderNumber: string;
-  status: OrderStatus;
-  orderType: OrderType;
-  totalAmount: number;
-  itemTotal: number;
-  deliveryFee: number;
-  discount: number;
-  itemsCount: number;
-  items: CustomerOrderItem[];
-  dispatchDate?: string;
-  dispatchSlot?: {
-    id: string;
-    start: string;
-    end: string;
-    label?: string;
-  };
-  createdAt: string;
-}
-
-export interface CustomerDetailResponse {
-  success: true;
-  customer: {
-    userId: string;
-    username: string;
-    phone: string;
-    email: string;
-    isVerified: boolean;
-    registeredAt: string;
-    stats: {
-      totalOrders: number;
-      deliveredOrders: number;
-      cancelledOrders: number;
-      activeOrders: number;
-      totalSpent: number;
-      avgOrderValue: number;
-      firstOrderAt: string | null;
-      lastOrderAt: string | null;
-    };
-    addresses: Array<{
-      id: string;
-      label: string;
-      street: string;
-      building?: string;
-      flatNumber?: string;
-      city: string;
-      pincode: string;
-      isDefault: boolean;
-    }>;
-    orders: CustomerOrderHistoryItem[];
-  };
 }
 
 export async function getCustomers(
@@ -1228,9 +1152,6 @@ export async function getCustomers(
     page?: number;
     limit?: number;
     search?: string;
-    sortBy?: "orders" | "spent" | "recent" | "joined" | "name";
-    sortOrder?: "asc" | "desc";
-    filter?: "all" | "ordered" | "repeat" | "frequent" | "no_orders";
   },
   options?: RequestOptions,
 ) {
@@ -1238,20 +1159,10 @@ export async function getCustomers(
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
-  if (params?.sortBy) query.set("sortBy", params.sortBy);
-  if (params?.sortOrder) query.set("sortOrder", params.sortOrder);
-  if (params?.filter) query.set("filter", params.filter);
 
   const qs = query.toString();
   return request<CustomersListResponse>(`/customers${qs ? `?${qs}` : ""}`, {
-    ttlMs: 30 * 1000,
-    ...options,
-  });
-}
-
-export async function getCustomerDetails(userId: string, options?: RequestOptions) {
-  return request<CustomerDetailResponse>(`/customers/${userId}`, {
-    ttlMs: 30 * 1000,
+    ttlMs: 15 * 1000,
     ...options,
   });
 }
