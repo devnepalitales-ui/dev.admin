@@ -1168,5 +1168,105 @@ export async function getCustomers(
   });
 }
 
+// ─── Kitchen Production & Inventory Prep ─────────────────────────
+
+export interface InventoryPrepDish {
+  productId: string;
+  productName: string;
+  categorySlug?: string;
+  type: "veg" | "non-veg";
+  unitQuantity?: string;
+  totalPortions: number;
+  estimatedPieces?: number;
+  orderCount: number;
+  slots: Array<{
+    slotId: string;
+    slotLabel: string;
+    quantity: number;
+  }>;
+  revenue: number;
+}
+
+export interface InventoryPrepAddon {
+  addonId: string;
+  name: string;
+  totalQuantity: number;
+  orderCount: number;
+}
+
+export interface InventoryPrepSlot {
+  slotId: string;
+  slotLabel: string;
+  start: string;
+  end: string;
+  orderCount: number;
+  deliveryCount: number;
+  pickupCount: number;
+  dishes: Array<{
+    productName: string;
+    type: "veg" | "non-veg";
+    quantity: number;
+  }>;
+}
+
+export interface InventoryPrepSpecialNote {
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  slotLabel: string;
+  orderType: "pickup" | "delivery";
+  note: string;
+}
+
+export interface InventoryPrepOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  orderType: "pickup" | "delivery";
+  status: OrderStatus;
+  slotLabel: string;
+  slotStart: string;
+  itemsCount: number;
+  items: Array<{
+    productName: string;
+    quantity: number;
+    addons?: string[];
+  }>;
+  notes?: string;
+  totalAmount: number;
+  deliveryAddress: string;
+}
+
+export interface InventoryPrepResponse {
+  success: true;
+  date: string;
+  isTomorrow: boolean;
+  summary: {
+    totalOrders: number;
+    cancelledOrders: number;
+    totalPortions: number;
+    vegPortions: number;
+    nonVegPortions: number;
+    deliveryOrders: number;
+    pickupOrders: number;
+    totalAddons: number;
+    totalRevenue: number;
+  };
+  dishes: InventoryPrepDish[];
+  addons: InventoryPrepAddon[];
+  slots: InventoryPrepSlot[];
+  specialNotes: InventoryPrepSpecialNote[];
+  orders: InventoryPrepOrder[];
+}
+
+export async function getInventoryPrep(date?: string, options?: RequestOptions) {
+  const query = date ? `?date=${encodeURIComponent(date)}` : "";
+  return request<InventoryPrepResponse>(`/inventory-prep${query}`, {
+    ttlMs: 15 * 1000,
+    ...options,
+  });
+}
+
 export { ApiError };
 
