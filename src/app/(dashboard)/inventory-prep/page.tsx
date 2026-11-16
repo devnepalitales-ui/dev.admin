@@ -135,8 +135,9 @@ export default function InventoryPrepPage() {
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<"dishes" | "slots" | "notes" | "roster">("dishes");
 
-  // Filter dishes by veg/non-veg
+  // Filter dishes by veg/non-veg and category
   const [foodFilter, setFoodFilter] = useState<"all" | "veg" | "non-veg">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "momo" | "jhol" | "shaphaley">("all");
   const [dishSearch, setDishSearch] = useState<string>("");
 
   // Batch needs display mode: "compact" (first 2 + popover) vs "expanded" (all chips)
@@ -167,11 +168,118 @@ export default function InventoryPrepPage() {
     },
   });
 
+  // Kitchen Production Metrics: Item Breakdown by Category (Momo, Jhol Momo, Shaphaley) and Type (Veg, Chicken)
+  const productionMetrics = useMemo(() => {
+    const dishes = data?.dishes || [];
+
+    const isShaphaley = (d: InventoryPrepDish) => {
+      const slug = (d.categorySlug || "").toLowerCase();
+      const name = (d.productName || "").toLowerCase();
+      return slug.includes("shaphaley") || name.includes("shaphaley");
+    };
+
+    const isJhol = (d: InventoryPrepDish) => {
+      const slug = (d.categorySlug || "").toLowerCase();
+      const name = (d.productName || "").toLowerCase();
+      return slug.includes("jhol") || name.includes("jhol");
+    };
+
+    let vegPlates = 0;
+    let chickenPlates = 0;
+
+    let momoVeg = 0;
+    let momoChicken = 0;
+
+    let jholVeg = 0;
+    let jholChicken = 0;
+
+    let shaphaleyVeg = 0;
+    let shaphaleyChicken = 0;
+
+    for (const d of dishes) {
+      const plates = d.totalPortions || 0;
+      const isVeg = d.type === "veg";
+
+      if (isVeg) {
+        vegPlates += plates;
+      } else {
+        chickenPlates += plates;
+      }
+
+      if (isShaphaley(d)) {
+        if (isVeg) shaphaleyVeg += plates;
+        else shaphaleyChicken += plates;
+      } else if (isJhol(d)) {
+        if (isVeg) jholVeg += plates;
+        else jholChicken += plates;
+      } else {
+        if (isVeg) momoVeg += plates;
+        else momoChicken += plates;
+      }
+    }
+
+    const totalPlates = vegPlates + chickenPlates || data?.summary?.totalPortions || 0;
+    const momoTotal = momoVeg + momoChicken;
+    const jholTotal = jholVeg + jholChicken;
+    const shaphaleyTotal = shaphaleyVeg + shaphaleyChicken;
+
+    return {
+      totalPlates,
+      vegPlates,
+      chickenPlates,
+      categories: {
+        momo: {
+          total: momoTotal,
+          veg: momoVeg,
+          chicken: momoChicken,
+          percentage: totalPlates > 0 ? Math.round((momoTotal / totalPlates) * 100) : 0,
+        },
+        jhol: {
+          total: jholTotal,
+          veg: jholVeg,
+          chicken: jholChicken,
+          percentage: totalPlates > 0 ? Math.round((jholTotal / totalPlates) * 100) : 0,
+        },
+        shaphaley: {
+          total: shaphaleyTotal,
+          veg: shaphaleyVeg,
+          chicken: shaphaleyChicken,
+          percentage: totalPlates > 0 ? Math.round((shaphaleyTotal / totalPlates) * 100) : 0,
+        },
+      },
+      typeBreakdown: {
+        veg: {
+          momo: momoVeg,
+          jhol: jholVeg,
+          shaphaley: shaphaleyVeg,
+        },
+        chicken: {
+          momo: momoChicken,
+          jhol: jholChicken,
+          shaphaley: shaphaleyChicken,
+        },
+      },
+    };
+  }, [data]);
+
   // Filtered dishes for display
   const filteredDishes = useMemo(() => {
     if (!data?.dishes) return [];
     return data.dishes.filter((dish) => {
       if (foodFilter !== "all" && dish.type !== foodFilter) return false;
+
+      if (categoryFilter !== "all") {
+        const slug = (dish.categorySlug || "").toLowerCase();
+        const name = (dish.productName || "").toLowerCase();
+        const isShaphaley = slug.includes("shaphaley") || name.includes("shaphaley");
+        const isJhol = slug.includes("jhol") || name.includes("jhol");
+        const isMomo = !isShaphaley && !isJhol;
+
+        if (categoryFilter === "shaphaley" && !isShaphaley) return false;
+        if (categoryFilter === "jhol" && !isJhol) return false;
+        if (categoryFilter === "momo" && !isMomo) return false;
+      }
+
       if (dishSearch.trim()) {
         const query = dishSearch.toLowerCase().trim();
         return (
@@ -181,7 +289,7 @@ export default function InventoryPrepPage() {
       }
       return true;
     });
-  }, [data?.dishes, foodFilter, dishSearch]);
+  }, [data?.dishes, foodFilter, categoryFilter, dishSearch]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -382,6 +490,321 @@ export default function InventoryPrepPage() {
         </Card>
       </div>
 
+      {/* ─── Kitchen Production Dashboard (Category × Type Matrix) ─── */}
+      {!loading && data && data.summary.totalOrders > 0 && (
+        <Card className="border-border/80 shadow-xs overflow-hidden">
+          <CardHeader className="p-4 pb-3 border-b border-border/60 bg-muted/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <ChefHat className="h-4 w-4 text-amber-500" />
+                  Kitchen Production Dashboard
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Total plates required broken down by Category (Momo, Jhol Momo, Shaphaley) and Type (Veg, Chicken)
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs font-bold font-mono px-2.5 py-1 bg-background border-amber-500/30">
+                  Total: <span className="text-amber-500 ml-1">{productionMetrics.totalPlates} Plates to Cook</span>
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 space-y-4">
+            {/* 5 Quick-Glance Production Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              {/* 1. Veg Plates Total */}
+              <div
+                onClick={() => setFoodFilter(foodFilter === "veg" ? "all" : "veg")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                  foodFilter === "veg"
+                    ? "border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/30"
+                    : "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10"
+                }`}
+                title="Click to filter table below by Veg"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Veg Plates
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                    TYPE
+                  </Badge>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.vegPlates}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">plates</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 truncate">
+                  Momo: {productionMetrics.typeBreakdown.veg.momo} • Jhol: {productionMetrics.typeBreakdown.veg.jhol} • Shaphaley: {productionMetrics.typeBreakdown.veg.shaphaley}
+                </div>
+              </div>
+
+              {/* 2. Chicken Plates Total */}
+              <div
+                onClick={() => setFoodFilter(foodFilter === "non-veg" ? "all" : "non-veg")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                  foodFilter === "non-veg"
+                    ? "border-rose-500 bg-rose-500/15 ring-2 ring-rose-500/30"
+                    : "border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10"
+                }`}
+                title="Click to filter table below by Chicken / Non-Veg"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-rose-500" />
+                    Chicken Plates
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
+                    TYPE
+                  </Badge>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.chickenPlates}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">plates</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 truncate">
+                  Momo: {productionMetrics.typeBreakdown.chicken.momo} • Jhol: {productionMetrics.typeBreakdown.chicken.jhol} • Shaphaley: {productionMetrics.typeBreakdown.chicken.shaphaley}
+                </div>
+              </div>
+
+              {/* 3. Momo Category */}
+              <div
+                onClick={() => setCategoryFilter(categoryFilter === "momo" ? "all" : "momo")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                  categoryFilter === "momo"
+                    ? "border-primary bg-primary/15 ring-2 ring-primary/30"
+                    : "border-border/80 bg-card hover:bg-muted/40"
+                }`}
+                title="Click to filter table below by Momo"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-foreground mb-1">
+                  <span className="flex items-center gap-1.5">
+                    🥟 Momo
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {productionMetrics.categories.momo.percentage}%
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.categories.momo.total}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">plates</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{productionMetrics.categories.momo.veg} Veg</span>
+                  <span>•</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">{productionMetrics.categories.momo.chicken} Chicken</span>
+                </div>
+              </div>
+
+              {/* 4. Jhol Momo Category */}
+              <div
+                onClick={() => setCategoryFilter(categoryFilter === "jhol" ? "all" : "jhol")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                  categoryFilter === "jhol"
+                    ? "border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/30"
+                    : "border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10"
+                }`}
+                title="Click to filter table below by Jhol Momo"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    🍲 Jhol Momo
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {productionMetrics.categories.jhol.percentage}%
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.categories.jhol.total}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">plates</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{productionMetrics.categories.jhol.veg} Veg</span>
+                  <span>•</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">{productionMetrics.categories.jhol.chicken} Chicken</span>
+                </div>
+              </div>
+
+              {/* 5. Shaphaley Category */}
+              <div
+                onClick={() => setCategoryFilter(categoryFilter === "shaphaley" ? "all" : "shaphaley")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all col-span-2 lg:col-span-1 ${
+                  categoryFilter === "shaphaley"
+                    ? "border-indigo-500 bg-indigo-500/15 ring-2 ring-indigo-500/30"
+                    : "border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10"
+                }`}
+                title="Click to filter table below by Shaphaley"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
+                  <span className="flex items-center gap-1.5">
+                    🫓 Shaphaley
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {productionMetrics.categories.shaphaley.percentage}%
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.categories.shaphaley.total}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">plates</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">{productionMetrics.categories.shaphaley.veg} Veg</span>
+                  <span>•</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-medium">{productionMetrics.categories.shaphaley.chicken} Chicken</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Matrix Cross-Tabulation Table */}
+            <div className="rounded-lg border border-border/70 overflow-hidden bg-background">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[34%] font-bold text-foreground text-xs">Production Item Category</TableHead>
+                    <TableHead className="text-center font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                      Veg Plates
+                    </TableHead>
+                    <TableHead className="text-center font-bold text-rose-600 dark:text-rose-400 text-xs">
+                      Chicken Plates
+                    </TableHead>
+                    <TableHead className="text-center font-bold text-foreground text-xs">
+                      Total Plates
+                    </TableHead>
+                    <TableHead className="text-right font-bold text-muted-foreground text-xs">
+                      Share of Kitchen Run
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="text-xs">
+                  {/* Row 1: Momo */}
+                  <TableRow>
+                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
+                      <span className="text-base">🥟</span>
+                      <div>
+                        <span>Momo</span>
+                        <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Steamed & Kothey)</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                      {productionMetrics.categories.momo.veg}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-rose-600 dark:text-rose-400">
+                      {productionMetrics.categories.momo.chicken}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-foreground">
+                      {productionMetrics.categories.momo.total} plates
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${productionMetrics.categories.momo.percentage}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-muted-foreground w-8 text-right">
+                          {productionMetrics.categories.momo.percentage}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Row 2: Jhol Momo */}
+                  <TableRow>
+                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
+                      <span className="text-base">🍲</span>
+                      <div>
+                        <span>Jhol Momo</span>
+                        <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Spiced Soup Dumplings)</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                      {productionMetrics.categories.jhol.veg}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-rose-600 dark:text-rose-400">
+                      {productionMetrics.categories.jhol.chicken}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-foreground">
+                      {productionMetrics.categories.jhol.total} plates
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full"
+                            style={{ width: `${productionMetrics.categories.jhol.percentage}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-muted-foreground w-8 text-right">
+                          {productionMetrics.categories.jhol.percentage}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Row 3: Shaphaley */}
+                  <TableRow>
+                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
+                      <span className="text-base">🫓</span>
+                      <div>
+                        <span>Shaphaley</span>
+                        <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Crispy Fried Pockets)</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                      {productionMetrics.categories.shaphaley.veg}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-medium text-rose-600 dark:text-rose-400">
+                      {productionMetrics.categories.shaphaley.chicken}
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-foreground">
+                      {productionMetrics.categories.shaphaley.total} plates
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full"
+                            style={{ width: `${productionMetrics.categories.shaphaley.percentage}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-muted-foreground w-8 text-right">
+                          {productionMetrics.categories.shaphaley.percentage}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Summary Total Row */}
+                  <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
+                    <TableCell className="text-foreground uppercase tracking-wider text-[11px] flex items-center gap-2 py-3">
+                      <span className="text-base">📊</span>
+                      <span>Total Production Run</span>
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                      {productionMetrics.vegPlates} Veg
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-rose-600 dark:text-rose-400 text-sm">
+                      {productionMetrics.chickenPlates} Chicken
+                    </TableCell>
+                    <TableCell className="text-center font-mono font-black text-amber-600 dark:text-amber-400 text-sm">
+                      {productionMetrics.totalPlates} Plates
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold text-foreground">
+                      100%
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Special Dietary & Customer Instructions Alert Banner */}
       {!loading && data?.specialNotes && data.specialNotes.length > 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5">
@@ -461,11 +884,34 @@ export default function InventoryPrepPage() {
 
         {/* Search for dishes */}
         {activeTab === "dishes" && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Category Filter Pills */}
+            <div className="hidden sm:flex items-center gap-1 border border-border/80 rounded-md p-0.5 bg-muted/40">
+              {(
+                [
+                  { key: "all", label: "All Categories" },
+                  { key: "momo", label: "Momo" },
+                  { key: "jhol", label: "Jhol Momo" },
+                  { key: "shaphaley", label: "Shaphaley" },
+                ] as const
+              ).map((c) => (
+                <Button
+                  key={c.key}
+                  variant={categoryFilter === c.key ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={() => setCategoryFilter(c.key)}
+                  className="h-6 text-[11px] font-medium px-2 cursor-pointer"
+                >
+                  {c.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Food Type Filter (Veg/Non-Veg) */}
             <div className="flex items-center gap-1 border border-border/80 rounded-md p-0.5 bg-muted/40">
               {(
                 [
-                  { key: "all", label: "All" },
+                  { key: "all", label: "All Types" },
                   { key: "veg", label: "Veg" },
                   { key: "non-veg", label: "Non-Veg" },
                 ] as const
@@ -475,7 +921,7 @@ export default function InventoryPrepPage() {
                   variant={foodFilter === f.key ? "secondary" : "ghost"}
                   size="xs"
                   onClick={() => setFoodFilter(f.key)}
-                  className="h-6 text-[11px] font-medium px-2"
+                  className="h-6 text-[11px] font-medium px-2 cursor-pointer"
                 >
                   {f.label}
                 </Button>

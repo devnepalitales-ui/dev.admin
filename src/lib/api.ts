@@ -1137,6 +1137,22 @@ export interface CustomerOrderSummary {
   lastOrderAt: string | null;
 }
 
+export interface CustomerRetentionStats {
+  totalCustomers: number;
+  repeatCustomers: number;
+  oneTimeCustomers: number;
+  repeatRate: number; // e.g. 42.5
+  totalOrders: number;
+  totalSpent: number;
+  repeatSpent: number;
+  repeatRevenuePercentage: number;
+  avgOrdersPerCustomer: number;
+  frequency: Array<{
+    label: string;
+    count: number;
+  }>;
+}
+
 export interface CustomersListResponse {
   success: true;
   customers: CustomerOrderSummary[];
@@ -1146,6 +1162,7 @@ export interface CustomersListResponse {
     total: number;
     totalPages: number;
   };
+  stats?: CustomerRetentionStats;
 }
 
 export async function getCustomers(
