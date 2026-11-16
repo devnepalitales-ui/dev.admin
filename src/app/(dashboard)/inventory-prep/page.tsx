@@ -122,22 +122,6 @@ function formatSlotTimeShort(rawLabel: string): string {
   return candidate.replace(/^0(\d)/, "$1").trim();
 }
 
-/**
- * Safely match a dish portion requirement to a specific dispatch slot
- */
-function getDishSlotQuantity(
-  dish: InventoryPrepDish,
-  slot: { slotId?: string; slotLabel: string }
-): number {
-  const match = dish.slots.find(
-    (s) =>
-      (s.slotId && slot.slotId && s.slotId === slot.slotId) ||
-      s.slotLabel.trim().toLowerCase() === slot.slotLabel.trim().toLowerCase() ||
-      formatSlotTimeShort(s.slotLabel) === formatSlotTimeShort(slot.slotLabel)
-  );
-  return match ? match.quantity : 0;
-}
-
 export default function InventoryPrepPage() {
   const todayStr = useMemo(() => getIstTodayDateStr(), []);
   const tomorrowStr = useMemo(() => shiftDateStr(todayStr, 1), [todayStr]);
@@ -203,13 +187,12 @@ export default function InventoryPrepPage() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm 8mm 8mm 8mm;
+            margin: 10mm 10mm 10mm 10mm;
           }
           html, body {
             background: #ffffff !important;
             color: #000000 !important;
-            font-size: 8.5pt !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            font-size: 10pt !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -220,162 +203,172 @@ export default function InventoryPrepPage() {
           .no-print {
             display: none !important;
           }
-          .print-manifest-root {
+          .print-only {
             display: block !important;
-            width: 100% !important;
+          }
+          .print-card {
+            border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           table {
             border-collapse: collapse !important;
             width: 100% !important;
-            table-layout: fixed !important;
+            max-width: 100% !important;
           }
-          th, td {
-            border: 1px solid #000000 !important;
-            padding: 3px 5px !important;
-            color: #000000 !important;
-          }
-          th {
-            background-color: #f3f4f6 !important;
-          }
-          .break-inside-avoid {
+          tr {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+          }
+          th,
+          td {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+            padding: 6px 8px !important;
           }
         }
       `}</style>
 
-      {/* Screen Interactive Dashboard - Hidden on Print */}
-      <div className="no-print space-y-6">
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                <ChefHat className="h-3.5 w-3.5" />
-                Kitchen Production & Inventory
-              </span>
-              {selectedDate === tomorrowStr && (
-                <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
-                  Planning for Tomorrow
-                </Badge>
-              )}
-              {selectedDate === todayStr && (
-                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
-                  Today&apos;s Dispatch
-                </Badge>
-              )}
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              Inventory & Prep Planning
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Calculate accurate ingredient requirements, dish plates, and batch schedules for upcoming kitchen pre-orders.
-            </p>
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <ChefHat className="h-3.5 w-3.5" />
+              Kitchen Production & Inventory
+            </span>
+            {selectedDate === tomorrowStr && (
+              <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
+                Planning for Tomorrow
+              </Badge>
+            )}
+            {selectedDate === todayStr && (
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
+                Today&apos;s Dispatch
+              </Badge>
+            )}
           </div>
-
-          {/* Global Actions */}
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              disabled={loading || !data?.summary.totalOrders}
-              className="text-xs gap-1.5 h-9"
-            >
-              <Printer className="h-3.5 w-3.5" />
-              Print Prep Sheet
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fetchPrepPlan(selectedDate)}
-              disabled={loading}
-              className="text-xs gap-1.5 h-9"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            Inventory & Prep Planning
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Calculate accurate ingredient requirements, dish plates, and batch schedules for upcoming kitchen pre-orders.
+          </p>
         </div>
 
-        {/* Date Selector Navigation Bar */}
-        <Card className="border-border/80 shadow-xs">
-          <CardContent className="p-3.5">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Quick Date Pills */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Button
-                  variant={selectedDate === todayStr ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedDate(todayStr)}
-                  className="h-8 text-xs font-medium"
-                >
-                  Today
-                </Button>
+        {/* Global Actions */}
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={loading || !data?.summary.totalOrders}
+            className="text-xs gap-1.5 h-9"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Print Prep Sheet
+          </Button>
 
-                <Button
-                  variant={selectedDate === tomorrowStr ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedDate(tomorrowStr)}
-                  className={`h-8 text-xs font-semibold ${
-                    selectedDate === tomorrowStr
-                      ? "bg-amber-600 hover:bg-amber-700 text-white"
-                      : "border-amber-500/30 text-amber-700 dark:text-amber-400"
-                  }`}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Tomorrow (Next Day)
-                </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchPrepPlan(selectedDate)}
+            disabled={loading}
+            className="text-xs gap-1.5 h-9"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-                <Button
-                  variant={selectedDate === dayAfterStr ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedDate(dayAfterStr)}
-                  className="h-8 text-xs font-medium"
-                >
-                  Day After
-                </Button>
-              </div>
+      {/* Date Selector Navigation Bar */}
+      <Card className="no-print border-border/80 shadow-xs">
+        <CardContent className="p-3.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Quick Date Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                variant={selectedDate === todayStr ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDate(todayStr)}
+                className="h-8 text-xs font-medium"
+              >
+                Today
+              </Button>
 
-              {/* Stepper & Date Picker */}
-              <div className="flex items-center gap-2 self-center sm:self-auto">
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setSelectedDate((curr) => shiftDateStr(curr, -1))}
-                  className="h-8 w-8 p-0"
-                  title="Previous Day"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+              <Button
+                variant={selectedDate === tomorrowStr ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDate(tomorrowStr)}
+                className={`h-8 text-xs font-semibold ${
+                  selectedDate === tomorrowStr
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "border-amber-500/30 text-amber-700 dark:text-amber-400"
+                }`}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Tomorrow (Next Day)
+              </Button>
 
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-muted/30 text-xs font-semibold">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{formatHumanDate(selectedDate)}</span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => setSelectedDate((curr) => shiftDateStr(curr, 1))}
-                  className="h-8 w-8 p-0"
-                  title="Next Day"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-
-                {/* Custom Date Input */}
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                  className="w-36 h-8 text-xs font-mono"
-                />
-              </div>
+              <Button
+                variant={selectedDate === dayAfterStr ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDate(dayAfterStr)}
+                className="h-8 text-xs font-medium"
+              >
+                Day After
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Stepper & Date Picker */}
+            <div className="flex items-center gap-2 self-center sm:self-auto">
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setSelectedDate((curr) => shiftDateStr(curr, -1))}
+                className="h-8 w-8 p-0"
+                title="Previous Day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-muted/30 text-xs font-semibold">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{formatHumanDate(selectedDate)}</span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => setSelectedDate((curr) => shiftDateStr(curr, 1))}
+                className="h-8 w-8 p-0"
+                title="Next Day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              {/* Custom Date Input */}
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                className="w-36 h-8 text-xs font-mono"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Print-Only Title Banner */}
+      <div className="hidden print-only mb-6 border-b pb-4">
+        <h1 className="text-2xl font-black">Nepali Tales Cloud Kitchen</h1>
+        <h2 className="text-lg font-bold">Kitchen Production Order & Prep Manifest</h2>
+        <p className="text-sm">
+          Dispatch Date: <strong>{formatHumanDate(selectedDate)}</strong> • Printed at: {new Date().toLocaleTimeString("en-IN")}
+        </p>
+      </div>
 
       {/* KPI Overview Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -668,19 +661,19 @@ export default function InventoryPrepPage() {
                 </CardHeader>
 
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="w-full">
                     <TableHeader>
                       <TableRow className="bg-muted/20">
-                        <TableHead className="w-[300px]">Dish / Item</TableHead>
-                        <TableHead className="w-[90px] text-center">Type</TableHead>
-                        <TableHead className="w-[150px] text-center bg-amber-500/5 dark:bg-amber-500/10 font-bold text-foreground">
+                        <TableHead className="w-[28%]">Dish / Item</TableHead>
+                        <TableHead className="w-[10%] text-center">Type</TableHead>
+                        <TableHead className="w-[14%] text-center bg-amber-500/5 dark:bg-amber-500/10 font-bold text-foreground">
                           Plates to Cook
                         </TableHead>
-                        <TableHead className="w-[120px] text-center">
+                        <TableHead className="w-[11%] text-center">
                           Total Pieces
                         </TableHead>
-                        <TableHead className="min-w-[260px]">Dispatch Batch Needs</TableHead>
-                        <TableHead className="w-[110px] text-right">Orders</TableHead>
+                        <TableHead className="w-[26%]">Dispatch Batch Needs</TableHead>
+                        <TableHead className="w-[11%] text-right">Orders</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -742,92 +735,101 @@ export default function InventoryPrepPage() {
                                 No batch assigned
                               </span>
                             ) : batchViewMode === "compact" && dish.slots.length > 2 ? (
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                {/* First 2 key batches shown directly */}
-                                {dish.slots.slice(0, 2).map((s, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs no-print"
-                                    title={s.slotLabel}
-                                  >
-                                    <span className="text-muted-foreground font-medium">
-                                      {formatSlotTimeShort(s.slotLabel)}
+                              <div>
+                                {/* Screen Compact Mode: First 2 + Popover */}
+                                <div className="flex items-center gap-1.5 flex-wrap no-print">
+                                  {dish.slots.slice(0, 2).map((s, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs"
+                                      title={s.slotLabel}
+                                    >
+                                      <span className="text-muted-foreground font-medium">
+                                        {formatSlotTimeShort(s.slotLabel)}
+                                      </span>
+                                      <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                                        {s.quantity}
+                                      </span>
                                     </span>
-                                    <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
-                                      {s.quantity}
-                                    </span>
-                                  </span>
-                                ))}
+                                  ))}
 
-                                {/* Interactive Popover for Remaining Batches */}
-                                <Popover>
-                                  <PopoverTrigger className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20 transition-all font-semibold cursor-pointer no-print">
-                                    <span>+{dish.slots.length - 2} more batches</span>
-                                  </PopoverTrigger>
-                                  <PopoverContent align="start" className="w-80 p-3 space-y-2.5 shadow-lg border-border">
-                                    <div className="flex items-center justify-between border-b border-border pb-2">
-                                      <div>
-                                        <div className="font-bold text-xs text-foreground truncate max-w-[190px]">
-                                          {dish.productName}
+                                  <Popover>
+                                    <PopoverTrigger className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20 transition-all font-semibold cursor-pointer">
+                                      <span>+{dish.slots.length - 2} more batches</span>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="start" className="w-80 p-3 space-y-2.5 shadow-lg border-border">
+                                      <div className="flex items-center justify-between border-b border-border pb-2">
+                                        <div>
+                                          <div className="font-bold text-xs text-foreground truncate max-w-[190px]">
+                                            {dish.productName}
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground">
+                                            {dish.totalPortions} total {dish.totalPortions === 1 ? "plate" : "plates"}
+                                          </div>
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground">
-                                          {dish.totalPortions} total {dish.totalPortions === 1 ? "plate" : "plates"}
-                                        </div>
+                                        <Badge variant="outline" className="text-[10px] font-mono">
+                                          {dish.slots.length} batches
+                                        </Badge>
                                       </div>
-                                      <Badge variant="outline" className="text-[10px] font-mono">
-                                        {dish.slots.length} batches
-                                      </Badge>
-                                    </div>
 
-                                    <div className="text-[11px] font-medium text-muted-foreground">
-                                      Plates needed per dispatch window:
-                                    </div>
+                                      <div className="text-[11px] font-medium text-muted-foreground">
+                                        Plates needed per dispatch window:
+                                      </div>
 
-                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                                      {dish.slots.map((s, idx) => (
-                                        <div
-                                          key={idx}
-                                          className="flex items-center justify-between p-1.5 rounded-md bg-muted/40 border border-border/40 text-xs"
-                                        >
-                                          <div className="flex items-center gap-1.5">
-                                            <Clock className="h-3 w-3 text-muted-foreground" />
-                                            <span className="font-medium text-foreground">
-                                              {formatSlotTimeShort(s.slotLabel)}
+                                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                        {dish.slots.map((s, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center justify-between p-1.5 rounded-md bg-muted/40 border border-border/40 text-xs"
+                                          >
+                                            <div className="flex items-center gap-1.5">
+                                              <Clock className="h-3 w-3 text-muted-foreground" />
+                                              <span className="font-medium text-foreground">
+                                                {formatSlotTimeShort(s.slotLabel)}
+                                              </span>
+                                            </div>
+                                            <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
+                                              {s.quantity} {s.quantity === 1 ? "plate" : "plates"}
                                             </span>
                                           </div>
-                                          <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
-                                            {s.quantity} {s.quantity === 1 ? "plate" : "plates"}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
 
-                                {/* Print view: Full list printed cleanly on paper */}
-                                <div className="hidden print:flex print:flex-wrap print:gap-1 text-[10px]">
+                                {/* Print View: Symmetrical, clean 2-column grid of all slots */}
+                                <div className="hidden print:grid print:grid-cols-2 print:gap-1 w-full text-[10px]">
                                   {dish.slots.map((s, idx) => (
-                                    <span key={idx} className="mr-2">
-                                      {formatSlotTimeShort(s.slotLabel)}: <strong>{s.quantity}</strong>
-                                    </span>
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between px-1.5 py-0.5 rounded bg-muted/50 border border-border/60 text-[10px]"
+                                    >
+                                      <span className="text-muted-foreground font-medium">
+                                        {formatSlotTimeShort(s.slotLabel)}
+                                      </span>
+                                      <span className="font-bold font-mono text-foreground ml-1">
+                                        {s.quantity}
+                                      </span>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-1">
+                              <div className="grid grid-cols-2 gap-1 w-full">
                                 {dish.slots.map((s, idx) => (
-                                  <span
+                                  <div
                                     key={idx}
-                                    className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs hover:bg-muted transition-colors"
+                                    className="flex items-center justify-between px-1.5 py-0.5 rounded bg-muted/70 text-foreground border border-border/60 shadow-2xs text-[10.5px]"
                                     title={s.slotLabel}
                                   >
-                                    <span className="text-muted-foreground font-medium">
-                                      {formatSlotTimeShort(s.slotLabel)}:
+                                    <span className="text-muted-foreground font-medium truncate">
+                                      {formatSlotTimeShort(s.slotLabel)}
                                     </span>
-                                    <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                                    <span className="font-bold font-mono text-primary ml-1">
                                       {s.quantity}
                                     </span>
-                                  </span>
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -1031,199 +1033,6 @@ export default function InventoryPrepPage() {
             </Card>
           )}
         </>
-      )}
-      </div>
-
-      {/* ========================================================================= */}
-      {/* DEDICATED PRINT MANIFEST - ZERO COLORS, HIGH CONTRAST, KITCHEN MATRIX */}
-      {/* ========================================================================= */}
-      {data && (
-        <div className="hidden print:block print-manifest-root text-black bg-white w-full space-y-3">
-          {/* 1. Header Strip (Super Compact: ~1.2 inches) */}
-          <div className="border-b-2 border-black pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-black uppercase tracking-tight text-black">
-                  Nepali Tales Cloud Kitchen
-                </h1>
-                <h2 className="text-xs font-bold text-black uppercase tracking-wide">
-                  Kitchen Production & Prep Manifest • {formatHumanDate(selectedDate)}
-                </h2>
-              </div>
-              <div className="text-right text-[10px] text-black font-mono">
-                <div>Printed: {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
-                <div>Date: {selectedDate}</div>
-              </div>
-            </div>
-
-            {/* Summary Row - Pure Monochrome Bar */}
-            <div className="mt-2 pt-1.5 border-t border-black/40 flex items-center justify-between text-xs font-mono font-bold text-black">
-              <span>ORDERS: {data.summary.totalOrders} ({data.summary.deliveryOrders} Del / {data.summary.pickupOrders} Pick)</span>
-              <span>•</span>
-              <span>PLATES: {data.summary.totalPortions} ({data.summary.vegPortions} VEG / {data.summary.nonVegPortions} NON-VEG)</span>
-              <span>•</span>
-              <span>BATCH WINDOWS: {data.slots.length} SLOTS</span>
-            </div>
-          </div>
-
-          {/* 2. Main Production Matrix Table */}
-          <div>
-            <div className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-between text-black">
-              <span>Production Dishes Checklist ({data.dishes.length} Items)</span>
-              <span className="font-mono text-[9px] font-normal">All numbers represent plates to fire</span>
-            </div>
-
-            <table className="w-full border-collapse border border-black text-xs">
-              <thead>
-                <tr className="bg-gray-100 text-black border-b border-black">
-                  <th className="border border-black p-1 text-left font-bold w-[28%] text-black">
-                    Dish / Item
-                  </th>
-                  <th className="border border-black p-1 text-center font-bold w-[9%] text-black">
-                    Type
-                  </th>
-                  <th className="border border-black p-1 text-center font-bold w-[8%] bg-gray-200 text-black">
-                    Total
-                  </th>
-                  {data.slots.map((slot) => (
-                    <th
-                      key={slot.slotId}
-                      className="border border-black p-0.5 text-center font-bold font-mono text-[9px] text-black"
-                    >
-                      {formatSlotTimeShort(slot.slotLabel)}
-                    </th>
-                  ))}
-                  <th className="border border-black p-1 text-center font-bold w-[9%] text-black">
-                    Pieces
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.dishes.map((dish, idx) => (
-                  <tr key={dish.productId || idx} className="border-b border-black">
-                    <td className="border border-black p-1 font-bold text-black">
-                      {dish.productName}
-                      {dish.unitQuantity && (
-                        <span className="font-normal text-[9px] ml-1">
-                          ({dish.unitQuantity})
-                        </span>
-                      )}
-                    </td>
-                    <td className="border border-black p-1 text-center font-mono text-[10px] font-bold text-black">
-                      {dish.type === "veg" ? "VEG" : "NON-VEG"}
-                    </td>
-                    <td className="border border-black p-1 text-center font-mono font-black text-xs bg-gray-100 text-black">
-                      {dish.totalPortions}
-                    </td>
-                    {data.slots.map((slot) => {
-                      const qty = getDishSlotQuantity(dish, slot);
-                      return (
-                        <td
-                          key={slot.slotId}
-                          className="border border-black p-1 text-center font-mono text-xs text-black"
-                        >
-                          {qty > 0 ? (
-                            <span className="font-black">{qty}</span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td className="border border-black p-1 text-center font-mono text-[10px] text-black">
-                      {dish.estimatedPieces ? `${dish.estimatedPieces} pcs` : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-200 font-bold border-t-2 border-black text-black">
-                  <td colSpan={2} className="border border-black p-1.5 text-right uppercase text-[10px] font-bold text-black">
-                    Total Plates Per Batch:
-                  </td>
-                  <td className="border border-black p-1.5 text-center font-mono font-black text-xs text-black">
-                    {data.summary.totalPortions}
-                  </td>
-                  {data.slots.map((slot) => {
-                    const slotSum = data.dishes.reduce(
-                      (acc, d) => acc + getDishSlotQuantity(d, slot),
-                      0
-                    );
-                    return (
-                      <td
-                        key={slot.slotId}
-                        className="border border-black p-1 text-center font-mono font-black text-xs text-black"
-                      >
-                        {slotSum > 0 ? slotSum : "-"}
-                      </td>
-                    );
-                  })}
-                  <td className="border border-black p-1 text-center font-mono text-[10px] text-black">
-                    -
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          {/* 3. Add-ons & Condiments (if any) */}
-          {data.addons.length > 0 && (
-            <div className="break-inside-avoid">
-              <div className="text-xs font-black uppercase tracking-wider mb-1 text-black">
-                Add-ons, Chutneys & Condiments Needed ({data.addons.length} items)
-              </div>
-              <table className="w-full border-collapse border border-black text-xs">
-                <thead>
-                  <tr className="bg-gray-100 border-b border-black text-black">
-                    <th className="border border-black p-1 text-left font-bold text-black">Item Name</th>
-                    <th className="border border-black p-1 text-center font-bold w-[25%] text-black">Units Required</th>
-                    <th className="border border-black p-1 text-right font-bold w-[25%] text-black">In Orders</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.addons.map((a, idx) => (
-                    <tr key={idx} className="border-b border-black text-black">
-                      <td className="border border-black p-1 font-bold text-black">{a.name}</td>
-                      <td className="border border-black p-1 text-center font-mono font-black text-black">
-                        {a.totalQuantity} units
-                      </td>
-                      <td className="border border-black p-1 text-right font-mono text-black">
-                        {a.orderCount} orders
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* 4. Kitchen Special Instructions & Dietary Requests */}
-          {data.specialNotes && data.specialNotes.length > 0 && (
-            <div className="break-inside-avoid border-2 border-black p-2 mt-2">
-              <div className="text-xs font-black uppercase tracking-wider mb-1 border-b border-black pb-1 flex items-center justify-between text-black">
-                <span>Customer Special Instructions & Dietary Requests ({data.specialNotes.length})</span>
-                <span className="font-mono text-[9px]">Verify prior to dispatch</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] pt-1">
-                {data.specialNotes.map((item, idx) => (
-                  <div key={idx} className="border-b border-gray-300 pb-1 text-black">
-                    <div className="font-bold flex items-center justify-between text-black">
-                      <span>
-                        #{item.orderNumber} • {item.customerName}
-                      </span>
-                      <span className="font-mono text-[9px] uppercase text-black">
-                        [{item.orderType}] • {formatSlotTimeShort(item.slotLabel)}
-                      </span>
-                    </div>
-                    <div className="italic text-black font-medium pl-1">
-                      &ldquo;{item.note}&rdquo;
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       )}
     </div>
   );
