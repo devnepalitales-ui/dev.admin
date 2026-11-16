@@ -961,33 +961,33 @@ export default function InventoryPrepPage() {
       )}
 
       {/* Navigation View Tabs (Dishes, Batch Slots, Customer Notes, Full Roster) */}
-      <div className="flex items-center justify-between gap-3 border-b border-border/80 pb-2">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/80 pb-3">
+        <div className="flex items-center gap-1.5 p-1 bg-muted/40 rounded-xl border border-border/80 w-full sm:w-auto overflow-x-auto">
           <Button
             variant={activeTab === "dishes" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("dishes")}
-            className="h-8 text-xs font-medium"
+            className="h-8 text-xs font-semibold px-3 cursor-pointer shrink-0"
           >
-            <UtensilsCrossed className="h-3.5 w-3.5 mr-1.5" />
-            Dishes & Add-ons ({data?.dishes.length ?? 0})
+            <UtensilsCrossed className="h-3.5 w-3.5 mr-1.5 text-primary" />
+            Dishes &amp; Add-ons ({data?.dishes.length ?? 0})
           </Button>
 
           <Button
             variant={activeTab === "slots" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("slots")}
-            className="h-8 text-xs font-medium"
+            className="h-8 text-xs font-semibold px-3 cursor-pointer shrink-0"
           >
             <Clock className="h-3.5 w-3.5 mr-1.5" />
-            Cooking Batches / Slots ({data?.slots.length ?? 0})
+            Cooking Batches ({data?.slots.length ?? 0})
           </Button>
 
           <Button
             variant={activeTab === "notes" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("notes")}
-            className="h-8 text-xs font-medium"
+            className="h-8 text-xs font-semibold px-3 cursor-pointer shrink-0"
           >
             <AlertCircle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
             Kitchen Notes ({data?.specialNotes.length ?? 0})
@@ -997,71 +997,12 @@ export default function InventoryPrepPage() {
             variant={activeTab === "roster" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("roster")}
-            className="h-8 text-xs font-medium"
+            className="h-8 text-xs font-semibold px-3 cursor-pointer shrink-0"
           >
             <Calendar className="h-3.5 w-3.5 mr-1.5" />
             Order Roster ({data?.orders.length ?? 0})
           </Button>
         </div>
-
-        {/* Search for dishes */}
-        {activeTab === "dishes" && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Category Filter Pills */}
-            <div className="hidden sm:flex items-center gap-1 border border-border/80 rounded-md p-0.5 bg-muted/40">
-              {(
-                [
-                  { key: "all", label: "All Categories" },
-                  { key: "momo", label: "Momo" },
-                  { key: "jhol", label: "Jhol Momo" },
-                  { key: "shaphaley", label: "Shaphaley" },
-                  { key: "addons", label: "Add-ons & Dips" },
-                ] as const
-              ).map((c) => (
-                <Button
-                  key={c.key}
-                  variant={categoryFilter === c.key ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={() => setCategoryFilter(c.key)}
-                  className="h-6 text-[11px] font-medium px-2 cursor-pointer"
-                >
-                  {c.label}
-                </Button>
-              ))}
-            </div>
-
-            {/* Food Type Filter (Veg/Non-Veg) */}
-            <div className="flex items-center gap-1 border border-border/80 rounded-md p-0.5 bg-muted/40">
-              {(
-                [
-                  { key: "all", label: "All Types" },
-                  { key: "veg", label: "Veg" },
-                  { key: "non-veg", label: "Non-Veg" },
-                ] as const
-              ).map((f) => (
-                <Button
-                  key={f.key}
-                  variant={foodFilter === f.key ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={() => setFoodFilter(f.key)}
-                  className="h-6 text-[11px] font-medium px-2 cursor-pointer"
-                >
-                  {f.label}
-                </Button>
-              ))}
-            </div>
-
-            <div className="relative w-44">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search dish..."
-                value={dishSearch}
-                onChange={(e) => setDishSearch(e.target.value)}
-                className="h-8 pl-8 text-xs"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Loading Skeleton */}
@@ -1121,8 +1062,8 @@ export default function InventoryPrepPage() {
                     <div>
                       <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <span>Production Dishes Checklist</span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {filteredDishes.length} Dishes
+                        <Badge variant="outline" className="text-[10px] bg-background">
+                          {filteredDishes.length} Items
                         </Badge>
                       </CardTitle>
                       <CardDescription className="text-xs">
@@ -1157,12 +1098,105 @@ export default function InventoryPrepPage() {
                         </button>
                       </div>
 
-                      <div className="text-xs font-semibold text-muted-foreground hidden md:block">
-                        Total: <span className="text-foreground">{data.summary.totalPortions} Plates</span>
+                      <div className="text-xs font-semibold text-muted-foreground hidden sm:block">
+                        Total: <span className="text-amber-500 font-bold">{productionMetrics.totalPlates} Plates</span>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
+
+                {/* Dedicated Filter & Search Toolbar */}
+                <div className="p-3 bg-muted/15 border-b border-border/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Category Filter Pills */}
+                    <div className="flex items-center gap-1 border border-border/80 rounded-lg p-0.5 bg-muted/40 overflow-x-auto">
+                      {(
+                        [
+                          { key: "all", label: "All Categories" },
+                          { key: "momo", label: "Momo" },
+                          { key: "jhol", label: "Jhol Momo" },
+                          { key: "shaphaley", label: "Shaphaley" },
+                          { key: "addons", label: "Add-ons & Dips" },
+                        ] as const
+                      ).map((c) => (
+                        <Button
+                          key={c.key}
+                          variant={categoryFilter === c.key ? "secondary" : "ghost"}
+                          size="xs"
+                          onClick={() => setCategoryFilter(c.key)}
+                          className={`h-7 text-xs font-medium px-2.5 cursor-pointer ${
+                            categoryFilter === c.key
+                              ? "font-bold text-foreground bg-background shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {c.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Food Type Filter (Veg/Non-Veg) */}
+                    <div className="flex items-center gap-1 border border-border/80 rounded-lg p-0.5 bg-muted/40">
+                      {(
+                        [
+                          { key: "all", label: "All Types" },
+                          { key: "veg", label: "Veg" },
+                          { key: "non-veg", label: "Non-Veg" },
+                        ] as const
+                      ).map((f) => (
+                        <Button
+                          key={f.key}
+                          variant={foodFilter === f.key ? "secondary" : "ghost"}
+                          size="xs"
+                          onClick={() => setFoodFilter(f.key)}
+                          className={`h-7 text-xs font-medium px-2.5 cursor-pointer ${
+                            foodFilter === f.key
+                              ? "font-bold text-foreground bg-background shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {f.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Quick Reset Button if filtered */}
+                    {(categoryFilter !== "all" || foodFilter !== "all" || dishSearch.trim()) && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => {
+                          setCategoryFilter("all");
+                          setFoodFilter("all");
+                          setDishSearch("");
+                        }}
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2"
+                      >
+                        Reset Filters
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Search for dishes */}
+                  <div className="relative w-full md:w-56">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search dish or item..."
+                      value={dishSearch}
+                      onChange={(e) => setDishSearch(e.target.value)}
+                      className="h-8 pl-8 pr-7 text-xs bg-background"
+                    />
+                    {dishSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setDishSearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 <div className="overflow-x-auto">
                   <Table className="w-full">
