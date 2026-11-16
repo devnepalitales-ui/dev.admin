@@ -122,6 +122,22 @@ function formatSlotTimeShort(rawLabel: string): string {
   return candidate.replace(/^0(\d)/, "$1").trim();
 }
 
+/**
+ * Safely match a dish portion requirement to a specific dispatch slot
+ */
+function getDishSlotQuantity(
+  dish: InventoryPrepDish,
+  slot: { slotId?: string; slotLabel: string }
+): number {
+  const match = dish.slots.find(
+    (s) =>
+      (s.slotId && slot.slotId && s.slotId === slot.slotId) ||
+      s.slotLabel.trim().toLowerCase() === slot.slotLabel.trim().toLowerCase() ||
+      formatSlotTimeShort(s.slotLabel) === formatSlotTimeShort(slot.slotLabel)
+  );
+  return match ? match.quantity : 0;
+}
+
 export default function InventoryPrepPage() {
   const todayStr = useMemo(() => getIstTodayDateStr(), []);
   const tomorrowStr = useMemo(() => shiftDateStr(todayStr, 1), [todayStr]);
@@ -185,10 +201,17 @@ export default function InventoryPrepPage() {
       {/* Print-specific stylesheet */}
       <style jsx global>{`
         @media print {
-          body {
+          @page {
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
+          }
+          html, body {
             background: #ffffff !important;
             color: #000000 !important;
-            font-size: 12pt;
+            font-size: 8.5pt !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           aside,
           header,
@@ -197,167 +220,162 @@ export default function InventoryPrepPage() {
           .no-print {
             display: none !important;
           }
-          .print-only {
+          .print-manifest-root {
             display: block !important;
-          }
-          .print-card {
-            border: 1px solid #000000 !important;
-            box-shadow: none !important;
-            background: #ffffff !important;
-            break-inside: avoid;
+            width: 100% !important;
           }
           table {
             border-collapse: collapse !important;
             width: 100% !important;
+            table-layout: fixed !important;
           }
-          th,
-          td {
-            border: 1px solid #cccccc !important;
-            padding: 6px 8px !important;
+          th, td {
+            border: 1px solid #000000 !important;
+            padding: 3px 5px !important;
             color: #000000 !important;
+          }
+          th {
+            background-color: #f3f4f6 !important;
+          }
+          .break-inside-avoid {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
 
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              <ChefHat className="h-3.5 w-3.5" />
-              Kitchen Production & Inventory
-            </span>
-            {selectedDate === tomorrowStr && (
-              <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
-                Planning for Tomorrow
-              </Badge>
-            )}
-            {selectedDate === todayStr && (
-              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
-                Today&apos;s Dispatch
-              </Badge>
-            )}
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            Inventory & Prep Planning
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Calculate accurate ingredient requirements, dish portions, and batch schedules for upcoming kitchen pre-orders.
-          </p>
-        </div>
-
-        {/* Global Actions */}
-        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrint}
-            disabled={loading || !data?.summary.totalOrders}
-            className="text-xs gap-1.5 h-9"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Print Prep Sheet
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchPrepPlan(selectedDate)}
-            disabled={loading}
-            className="text-xs gap-1.5 h-9"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Date Selector Navigation Bar */}
-      <Card className="no-print border-border/80 shadow-xs">
-        <CardContent className="p-3.5">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            {/* Quick Date Pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Button
-                variant={selectedDate === todayStr ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedDate(todayStr)}
-                className="h-8 text-xs font-medium"
-              >
-                Today
-              </Button>
-
-              <Button
-                variant={selectedDate === tomorrowStr ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedDate(tomorrowStr)}
-                className={`h-8 text-xs font-semibold ${
-                  selectedDate === tomorrowStr
-                    ? "bg-amber-600 hover:bg-amber-700 text-white"
-                    : "border-amber-500/30 text-amber-700 dark:text-amber-400"
-                }`}
-              >
-                <Sparkles className="h-3 w-3 mr-1" />
-                Tomorrow (Next Day)
-              </Button>
-
-              <Button
-                variant={selectedDate === dayAfterStr ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedDate(dayAfterStr)}
-                className="h-8 text-xs font-medium"
-              >
-                Day After
-              </Button>
+      {/* Screen Interactive Dashboard - Hidden on Print */}
+      <div className="no-print space-y-6">
+        {/* Top Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <ChefHat className="h-3.5 w-3.5" />
+                Kitchen Production & Inventory
+              </span>
+              {selectedDate === tomorrowStr && (
+                <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary">
+                  Planning for Tomorrow
+                </Badge>
+              )}
+              {selectedDate === todayStr && (
+                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
+                  Today&apos;s Dispatch
+                </Badge>
+              )}
             </div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              Inventory & Prep Planning
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Calculate accurate ingredient requirements, dish portions, and batch schedules for upcoming kitchen pre-orders.
+            </p>
+          </div>
 
-            {/* Stepper & Date Picker */}
-            <div className="flex items-center gap-2 self-center sm:self-auto">
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => setSelectedDate((curr) => shiftDateStr(curr, -1))}
-                className="h-8 w-8 p-0"
-                title="Previous Day"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+          {/* Global Actions */}
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              disabled={loading || !data?.summary.totalOrders}
+              className="text-xs gap-1.5 h-9"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print Prep Sheet
+            </Button>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-muted/30 text-xs font-semibold">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>{formatHumanDate(selectedDate)}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchPrepPlan(selectedDate)}
+              disabled={loading}
+              className="text-xs gap-1.5 h-9"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        {/* Date Selector Navigation Bar */}
+        <Card className="border-border/80 shadow-xs">
+          <CardContent className="p-3.5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Quick Date Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Button
+                  variant={selectedDate === todayStr ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDate(todayStr)}
+                  className="h-8 text-xs font-medium"
+                >
+                  Today
+                </Button>
+
+                <Button
+                  variant={selectedDate === tomorrowStr ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDate(tomorrowStr)}
+                  className={`h-8 text-xs font-semibold ${
+                    selectedDate === tomorrowStr
+                      ? "bg-amber-600 hover:bg-amber-700 text-white"
+                      : "border-amber-500/30 text-amber-700 dark:text-amber-400"
+                  }`}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Tomorrow (Next Day)
+                </Button>
+
+                <Button
+                  variant={selectedDate === dayAfterStr ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedDate(dayAfterStr)}
+                  className="h-8 text-xs font-medium"
+                >
+                  Day After
+                </Button>
               </div>
 
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => setSelectedDate((curr) => shiftDateStr(curr, 1))}
-                className="h-8 w-8 p-0"
-                title="Next Day"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              {/* Stepper & Date Picker */}
+              <div className="flex items-center gap-2 self-center sm:self-auto">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setSelectedDate((curr) => shiftDateStr(curr, -1))}
+                  className="h-8 w-8 p-0"
+                  title="Previous Day"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
 
-              {/* Custom Date Input */}
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                className="w-36 h-8 text-xs font-mono"
-              />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-muted/30 text-xs font-semibold">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{formatHumanDate(selectedDate)}</span>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setSelectedDate((curr) => shiftDateStr(curr, 1))}
+                  className="h-8 w-8 p-0"
+                  title="Next Day"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+                {/* Custom Date Input */}
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                  className="w-36 h-8 text-xs font-mono"
+                />
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Print-Only Title Banner */}
-      <div className="hidden print-only mb-6 border-b pb-4">
-        <h1 className="text-2xl font-black">Nepali Tales Cloud Kitchen</h1>
-        <h2 className="text-lg font-bold">Kitchen Production Order & Prep Manifest</h2>
-        <p className="text-sm">
-          Dispatch Date: <strong>{formatHumanDate(selectedDate)}</strong> • Printed at: {new Date().toLocaleTimeString("en-IN")}
-        </p>
-      </div>
+          </CardContent>
+        </Card>
 
       {/* KPI Overview Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1013,6 +1031,199 @@ export default function InventoryPrepPage() {
             </Card>
           )}
         </>
+      )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* DEDICATED PRINT MANIFEST - ZERO COLORS, HIGH CONTRAST, KITCHEN MATRIX */}
+      {/* ========================================================================= */}
+      {data && (
+        <div className="hidden print:block print-manifest-root text-black bg-white w-full space-y-3">
+          {/* 1. Header Strip (Super Compact: ~1.2 inches) */}
+          <div className="border-b-2 border-black pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-black uppercase tracking-tight text-black">
+                  Nepali Tales Cloud Kitchen
+                </h1>
+                <h2 className="text-xs font-bold text-black uppercase tracking-wide">
+                  Kitchen Production & Prep Manifest • {formatHumanDate(selectedDate)}
+                </h2>
+              </div>
+              <div className="text-right text-[10px] text-black font-mono">
+                <div>Printed: {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
+                <div>Date: {selectedDate}</div>
+              </div>
+            </div>
+
+            {/* Summary Row - Pure Monochrome Bar */}
+            <div className="mt-2 pt-1.5 border-t border-black/40 flex items-center justify-between text-xs font-mono font-bold text-black">
+              <span>ORDERS: {data.summary.totalOrders} ({data.summary.deliveryOrders} Del / {data.summary.pickupOrders} Pick)</span>
+              <span>•</span>
+              <span>PORTIONS: {data.summary.totalPortions} ({data.summary.vegPortions} VEG / {data.summary.nonVegPortions} NON-VEG)</span>
+              <span>•</span>
+              <span>BATCH WINDOWS: {data.slots.length} SLOTS</span>
+            </div>
+          </div>
+
+          {/* 2. Main Production Matrix Table */}
+          <div>
+            <div className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-between text-black">
+              <span>Production Dishes Checklist ({data.dishes.length} Items)</span>
+              <span className="font-mono text-[9px] font-normal">All numbers represent portions to fire</span>
+            </div>
+
+            <table className="w-full border-collapse border border-black text-xs">
+              <thead>
+                <tr className="bg-gray-100 text-black border-b border-black">
+                  <th className="border border-black p-1 text-left font-bold w-[28%] text-black">
+                    Dish / Item
+                  </th>
+                  <th className="border border-black p-1 text-center font-bold w-[9%] text-black">
+                    Type
+                  </th>
+                  <th className="border border-black p-1 text-center font-bold w-[8%] bg-gray-200 text-black">
+                    Total
+                  </th>
+                  {data.slots.map((slot) => (
+                    <th
+                      key={slot.slotId}
+                      className="border border-black p-0.5 text-center font-bold font-mono text-[9px] text-black"
+                    >
+                      {formatSlotTimeShort(slot.slotLabel)}
+                    </th>
+                  ))}
+                  <th className="border border-black p-1 text-center font-bold w-[9%] text-black">
+                    Pieces
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.dishes.map((dish, idx) => (
+                  <tr key={dish.productId || idx} className="border-b border-black">
+                    <td className="border border-black p-1 font-bold text-black">
+                      {dish.productName}
+                      {dish.unitQuantity && (
+                        <span className="font-normal text-[9px] ml-1">
+                          ({dish.unitQuantity})
+                        </span>
+                      )}
+                    </td>
+                    <td className="border border-black p-1 text-center font-mono text-[10px] font-bold text-black">
+                      {dish.type === "veg" ? "VEG" : "NON-VEG"}
+                    </td>
+                    <td className="border border-black p-1 text-center font-mono font-black text-xs bg-gray-100 text-black">
+                      {dish.totalPortions}
+                    </td>
+                    {data.slots.map((slot) => {
+                      const qty = getDishSlotQuantity(dish, slot);
+                      return (
+                        <td
+                          key={slot.slotId}
+                          className="border border-black p-1 text-center font-mono text-xs text-black"
+                        >
+                          {qty > 0 ? (
+                            <span className="font-black">{qty}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="border border-black p-1 text-center font-mono text-[10px] text-black">
+                      {dish.estimatedPieces ? `${dish.estimatedPieces} pcs` : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-200 font-bold border-t-2 border-black text-black">
+                  <td colSpan={2} className="border border-black p-1.5 text-right uppercase text-[10px] font-bold text-black">
+                    Batch Totals:
+                  </td>
+                  <td className="border border-black p-1.5 text-center font-mono font-black text-xs text-black">
+                    {data.summary.totalPortions}
+                  </td>
+                  {data.slots.map((slot) => {
+                    const slotSum = data.dishes.reduce(
+                      (acc, d) => acc + getDishSlotQuantity(d, slot),
+                      0
+                    );
+                    return (
+                      <td
+                        key={slot.slotId}
+                        className="border border-black p-1 text-center font-mono font-black text-xs text-black"
+                      >
+                        {slotSum > 0 ? slotSum : "-"}
+                      </td>
+                    );
+                  })}
+                  <td className="border border-black p-1 text-center font-mono text-[10px] text-black">
+                    -
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* 3. Add-ons & Condiments (if any) */}
+          {data.addons.length > 0 && (
+            <div className="break-inside-avoid">
+              <div className="text-xs font-black uppercase tracking-wider mb-1 text-black">
+                Add-ons, Chutneys & Condiments Needed ({data.addons.length} items)
+              </div>
+              <table className="w-full border-collapse border border-black text-xs">
+                <thead>
+                  <tr className="bg-gray-100 border-b border-black text-black">
+                    <th className="border border-black p-1 text-left font-bold text-black">Item Name</th>
+                    <th className="border border-black p-1 text-center font-bold w-[25%] text-black">Units Required</th>
+                    <th className="border border-black p-1 text-right font-bold w-[25%] text-black">In Orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.addons.map((a, idx) => (
+                    <tr key={idx} className="border-b border-black text-black">
+                      <td className="border border-black p-1 font-bold text-black">{a.name}</td>
+                      <td className="border border-black p-1 text-center font-mono font-black text-black">
+                        {a.totalQuantity} units
+                      </td>
+                      <td className="border border-black p-1 text-right font-mono text-black">
+                        {a.orderCount} orders
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 4. Kitchen Special Instructions & Dietary Requests */}
+          {data.specialNotes && data.specialNotes.length > 0 && (
+            <div className="break-inside-avoid border-2 border-black p-2 mt-2">
+              <div className="text-xs font-black uppercase tracking-wider mb-1 border-b border-black pb-1 flex items-center justify-between text-black">
+                <span>Customer Special Instructions & Dietary Requests ({data.specialNotes.length})</span>
+                <span className="font-mono text-[9px]">Verify prior to dispatch</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] pt-1">
+                {data.specialNotes.map((item, idx) => (
+                  <div key={idx} className="border-b border-gray-300 pb-1 text-black">
+                    <div className="font-bold flex items-center justify-between text-black">
+                      <span>
+                        #{item.orderNumber} • {item.customerName}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase text-black">
+                        [{item.orderType}] • {formatSlotTimeShort(item.slotLabel)}
+                      </span>
+                    </div>
+                    <div className="italic text-black font-medium pl-1">
+                      &ldquo;{item.note}&rdquo;
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
