@@ -26,7 +26,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Printer,
-  FileSpreadsheet,
   RefreshCw,
   Clock,
   AlertCircle,
@@ -121,55 +120,6 @@ function formatSlotTimeShort(rawLabel: string): string {
     return `${startTime} ${startPeriod}–${endTime} ${endPeriod}`;
   }
   return candidate.replace(/^0(\d)/, "$1").trim();
-}
-
-/**
- * Clean CSV export for kitchen inventory purchasing & prep
- */
-function exportPrepPlanToCsv(data: InventoryPrepResponse) {
-  if (!data.dishes.length && !data.addons.length) {
-    toast.info("No items scheduled for this date to export.");
-    return;
-  }
-
-  const lines: string[] = [];
-  lines.push(`"Nepali Tales - Kitchen Inventory & Production Plan"`);
-  lines.push(`"Dispatch Date:","${formatHumanDate(data.date)}"`);
-  lines.push(`"Total Orders:","${data.summary.totalOrders}"`);
-  lines.push(`"Total Portions:","${data.summary.totalPortions}"`);
-  lines.push(`"Veg Portions:","${data.summary.vegPortions}"`);
-  lines.push(`"Non-Veg Portions:","${data.summary.nonVegPortions}"`);
-  lines.push("");
-
-  // Dishes section
-  lines.push(`"PRODUCTION DISHES PREP LIST"`);
-  lines.push(`"Dish Name","Category / Type","Portions (Orders)","Estimated Pieces","Orders Count","Estimated Revenue","Slot Requirements"`);
-  for (const dish of data.dishes) {
-    const slotStr = dish.slots.map((s) => `${s.slotLabel}: ${s.quantity}`).join("; ");
-    lines.push(
-      `"${dish.productName.replace(/"/g, '""')}","${dish.type.toUpperCase()}",${dish.totalPortions},${dish.estimatedPieces || "N/A"},${dish.orderCount},${dish.revenue},"${slotStr.replace(/"/g, '""')}"`,
-    );
-  }
-
-  lines.push("");
-  lines.push(`"ADD-ONS & CHUTNEYS LIST"`);
-  lines.push(`"Item Name","Total Units Required","Orders Requesting"`);
-  for (const addon of data.addons) {
-    lines.push(`"${addon.name.replace(/"/g, '""')}",${addon.totalQuantity},${addon.orderCount}`);
-  }
-
-  const csvContent = "\uFEFF" + lines.join("\r\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `kitchen_prep_plan_${data.date}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-
-  toast.success("Kitchen production plan exported to CSV!");
 }
 
 export default function InventoryPrepPage() {
@@ -307,17 +257,6 @@ export default function InventoryPrepPage() {
           >
             <Printer className="h-3.5 w-3.5" />
             Print Prep Sheet
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => data && exportPrepPlanToCsv(data)}
-            disabled={loading || !data?.summary.totalOrders}
-            className="text-xs gap-1.5 h-9"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-            Export CSV
           </Button>
 
           <Button
