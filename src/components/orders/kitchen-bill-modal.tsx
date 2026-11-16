@@ -89,8 +89,11 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
           .map(
             (add) => `
             <tr>
-              <td colspan="4" style="padding-left: 8px; font-size: 10px; font-weight: 600; color: #000000; line-height: 13px;">
-                + ${add.name} (${add.quantity}x @ ${add.price} = ${add.total})
+              <td style="padding-left: 8px; font-size: 10px; font-weight: 600; color: #000000; line-height: 13px;">
+                + ${add.name}
+              </td>
+              <td style="padding: 2px 0; text-align: right; font-size: 10px; font-weight: 700; color: #000000;">
+                ${add.quantity}
               </td>
             </tr>
           `,
@@ -102,14 +105,8 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
             <td style="padding: 3px 0 2px 0; text-align: left; font-weight: 700; font-size: 11px; vertical-align: top; color: #000000;">
               ${item.name}
             </td>
-            <td style="padding: 3px 2px 2px 2px; text-align: right; font-size: 11px; font-weight: 600; vertical-align: top; white-space: nowrap; color: #000000;">
-              ${item.price}
-            </td>
-            <td style="padding: 3px 2px 2px 2px; text-align: center; font-size: 11px; font-weight: 800; vertical-align: top; color: #000000;">
-              ${item.quantity}
-            </td>
             <td style="padding: 3px 0 2px 2px; text-align: right; font-size: 11px; font-weight: 800; vertical-align: top; white-space: nowrap; color: #000000;">
-              ${item.total}
+              ${item.quantity}
             </td>
           </tr>
           ${addonLines}
@@ -200,9 +197,6 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
               <div style="font-size: 10px; font-weight: 600; margin-top: 2px; line-height: 13px; color: #000000;">
                 ${b.restaurant.address}
               </div>
-              <div style="font-size: 10.5px; font-weight: 700; margin-top: 2px; color: #000000;">
-                Ph: ${b.restaurant.phone}
-              </div>
             </div>
 
             <div class="dashed-line"></div>
@@ -261,14 +255,12 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
 
             <div class="dashed-line"></div>
 
-            <!-- Items Table -->
+            <!-- Items Table (Product Name & Quantity only) -->
             <table style="width: 100%; font-size: 11px; color: #000000; line-height: 1.35;">
               <thead>
                 <tr style="border-bottom: 1.5px dashed #000000; font-weight: 800; font-size: 11.5px;">
-                  <th style="text-align: left; padding: 2px 0 3px 0;">Item</th>
-                  <th style="text-align: right; padding: 2px 2px 3px 2px; width: 38px;">Price</th>
-                  <th style="text-align: center; padding: 2px 2px 3px 2px; width: 28px;">Qty</th>
-                  <th style="text-align: right; padding: 2px 0 3px 2px; width: 44px;">Total</th>
+                  <th style="text-align: left; padding: 2px 0 3px 0;">Product Name</th>
+                  <th style="text-align: right; padding: 2px 0 3px 2px; width: 44px;">Qty</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,36 +270,14 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
 
             <div class="dashed-line"></div>
 
-            <!-- Totals Table -->
-            <table style="width: 100%; font-size: 11px; color: #000000; line-height: 1.35; font-weight: 600;">
-              <tr>
-                <td style="text-align: left; padding: 2px 0;">Sub-Total:</td>
-                <td style="text-align: right; padding: 2px 0; font-weight: 800;">INR ${b.totals.subtotal}</td>
-              </tr>
-              <tr>
-                <td style="text-align: left; padding: 2px 0;">
-                  ${isPickup ? "Fulfillment:" : "Delivery Fee:"}
+            <!-- Fulfillment & Mode (No amounts) -->
+            <table style="width: 100%; font-size: 11px; color: #000000; line-height: 1.35; font-weight: 700;">
+              <tr style="font-weight: 900; font-size: 11.5px;">
+                <td style="text-align: left; padding: 3px 0 2px 0;">
+                  Mode: ${b.payment.mode === "RAZORPAY" ? "Online (Pre-Paid)" : b.payment.mode}
                 </td>
-                <td style="text-align: right; padding: 2px 0; font-weight: 700;">
-                  ${isPickup ? "FREE (Pickup)" : b.totals.deliveryFee > 0 ? `INR ${b.totals.deliveryFee}` : "As per Borzo/Porter service"}
-                </td>
-              </tr>
-              ${
-                b.totals.discount > 0
-                  ? `
-              <tr>
-                <td style="text-align: left; padding: 2px 0;">Discount:</td>
-                <td style="text-align: right; padding: 2px 0; font-weight: 800;">-INR ${b.totals.discount}</td>
-              </tr>
-              `
-                  : ""
-              }
-              <tr style="border-top: 1.5px dashed #000000; font-weight: 900; font-size: 13px;">
-                <td style="text-align: left; padding-top: 5px; padding-bottom: 2px;">
-                  Mode: ${b.payment.mode === "RAZORPAY" ? "Online" : b.payment.mode}
-                </td>
-                <td style="text-align: right; padding-top: 5px; padding-bottom: 2px;">
-                  TOTAL: INR ${b.totals.grandTotal}
+                <td style="text-align: right; padding: 3px 0 2px 0;">
+                  ${isPickup ? "Self-Pickup" : "Delivery"}
                 </td>
               </tr>
             </table>
@@ -440,9 +410,6 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
               <p className="text-[10px] leading-tight mt-1 text-neutral-800">
                 {bill.restaurant.address}
               </p>
-              <p className="text-[10px] mt-0.5 text-neutral-800">
-                Ph: {bill.restaurant.phone}
-              </p>
             </div>
 
             <div className="text-center text-[10px] font-bold py-1 border-t border-b border-dashed border-black">
@@ -505,14 +472,12 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
 
             <div className="border-t border-dashed border-black" />
 
-            {/* Item Breakdown Table */}
+            {/* Item Breakdown Table (Product Name & Quantity only) */}
             <table className="w-full text-[11px] border-collapse">
               <thead>
                 <tr className="border-b border-dashed border-black font-bold">
-                  <th className="text-left py-1">Item</th>
-                  <th className="text-right py-1 px-1">Price</th>
-                  <th className="text-center py-1 px-1">Qty</th>
-                  <th className="text-right py-1">Total</th>
+                  <th className="text-left py-1">Product Name</th>
+                  <th className="text-right py-1">Qty</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-dotted divide-neutral-300">
@@ -524,20 +489,14 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
                         <div className="text-[9.5px] text-neutral-600 pl-1.5 space-y-0.5">
                           {item.addons.map((add, aIdx) => (
                             <div key={aIdx}>
-                              + {add.name} ({add.quantity}x @ ₹{add.price})
+                              + {add.name} ({add.quantity})
                             </div>
                           ))}
                         </div>
                       )}
                     </td>
-                    <td className="py-1 px-1 text-right whitespace-nowrap">
-                      ₹{item.price}
-                    </td>
-                    <td className="py-1 px-1 text-center font-bold">
-                      {item.quantity}
-                    </td>
                     <td className="py-1 text-right font-bold whitespace-nowrap">
-                      ₹{item.total}
+                      {item.quantity}
                     </td>
                   </tr>
                 ))}
@@ -546,37 +505,15 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
 
             <div className="border-t border-dashed border-black" />
 
-            {/* Totals Table */}
+            {/* Fulfillment & Mode (No amounts) */}
             <table className="w-full text-[11px] border-collapse">
               <tbody>
-                <tr>
-                  <td className="text-left py-0.5">Sub-Total:</td>
-                  <td className="text-right py-0.5 font-semibold">₹{bill.totals.subtotal}</td>
-                </tr>
-                <tr>
-                  <td className="text-left py-0.5">
-                    {bill.order.orderType === "pickup" ? "Fulfillment:" : "Delivery Fee:"}
+                <tr className="font-bold text-xs">
+                  <td className="text-left py-1">
+                    Mode: {bill.payment.mode === "RAZORPAY" ? "Online (Pre-Paid)" : bill.payment.mode}
                   </td>
-                  <td className="text-right py-0.5">
-                    {bill.order.orderType === "pickup"
-                      ? "Free (Pickup)"
-                      : bill.totals.deliveryFee > 0
-                      ? `₹${bill.totals.deliveryFee}`
-                      : "As per Borzo/Porter service"}
-                  </td>
-                </tr>
-                {bill.totals.discount > 0 && (
-                  <tr>
-                    <td className="text-left py-0.5">Discount:</td>
-                    <td className="text-right py-0.5">-₹{bill.totals.discount}</td>
-                  </tr>
-                )}
-                <tr className="border-t border-dashed border-black font-bold text-xs">
-                  <td className="text-left pt-1.5">
-                    Mode: {bill.payment.mode === "RAZORPAY" ? "Online" : bill.payment.mode}
-                  </td>
-                  <td className="text-right pt-1.5">
-                    Total: ₹{bill.totals.grandTotal}
+                  <td className="text-right py-1">
+                    {bill.order.orderType === "pickup" ? "Self-Pickup" : "Delivery"}
                   </td>
                 </tr>
               </tbody>

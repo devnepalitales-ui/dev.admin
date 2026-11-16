@@ -70,7 +70,6 @@ export async function generateKitchenBillPdf(bill: KitchenBill): Promise<Uint8Ar
   for (const l of wrapText(bill.restaurant.address, COLS)) {
     lines.push({ text: l, align: "center" });
   }
-  lines.push({ text: `Ph: ${bill.restaurant.phone}`, align: "center" });
   lines.push(divider);
   lines.push({ text: "RECEIPT", bold: true, align: "center" });
   lines.push(divider);
@@ -116,30 +115,27 @@ export async function generateKitchenBillPdf(bill: KitchenBill): Promise<Uint8Ar
 
   lines.push(divider);
 
-  // 3. Item Breakdown Table
+  // 3. Item Breakdown Table (Product Name & Quantity only)
   lines.push({
-    left: "Item",
-    right: "Price Qty Total",
+    left: "Product Name",
+    right: "Qty",
     bold: true,
   });
 
   for (const item of bill.items) {
-    const priceStr = String(item.price).padStart(5);
-    const qtyStr = String(item.quantity).padStart(3);
-    const totalStr = String(item.total).padStart(6);
-    const colRight = `${priceStr} ${qtyStr} ${totalStr}`;
+    const qtyStr = String(item.quantity);
+    const maxItemNameLen = COLS - qtyStr.length - 2;
 
-    const maxItemNameLen = COLS - colRight.length - 1;
     if (item.name.length <= maxItemNameLen) {
       lines.push({
         left: item.name,
-        right: colRight,
+        right: qtyStr,
       });
     } else {
       const itemWrapped = wrapText(item.name, maxItemNameLen);
       lines.push({
         left: itemWrapped[0],
-        right: colRight,
+        right: qtyStr,
       });
       for (let i = 1; i < itemWrapped.length; i++) {
         lines.push({ text: `  ${itemWrapped[i]}` });
@@ -148,13 +144,13 @@ export async function generateKitchenBillPdf(bill: KitchenBill): Promise<Uint8Ar
 
     if (item.addons && item.addons.length > 0) {
       for (const add of item.addons) {
-        const addInfo = `+ ${add.name} (${add.quantity}x @ ${add.price})`;
-        const addTotal = String(add.total);
-        if (addInfo.length + addTotal.length + 1 <= COLS) {
-          lines.push({ left: `  ${addInfo}`, right: addTotal });
+        const addInfo = `+ ${add.name}`;
+        const addQty = String(add.quantity);
+        if (addInfo.length + addQty.length + 2 <= COLS) {
+          lines.push({ left: `  ${addInfo}`, right: addQty });
         } else {
           lines.push({ text: `  ${addInfo}` });
-          lines.push({ right: addTotal });
+          lines.push({ right: addQty });
         }
       }
     }
@@ -162,33 +158,10 @@ export async function generateKitchenBillPdf(bill: KitchenBill): Promise<Uint8Ar
 
   lines.push(divider);
 
-  // 4. Totals
+  // 4. Fulfillment & Payment Mode
   lines.push({
-    left: "Sub-Total:",
-    right: `INR ${bill.totals.subtotal}`,
-  });
-  if (isPickup) {
-    lines.push({
-      left: "Fulfillment:",
-      right: "Self-Pickup (Free)",
-    });
-  } else {
-    lines.push({
-      left: "Delivery Fee:",
-      right: bill.totals.deliveryFee > 0 ? `INR ${bill.totals.deliveryFee}` : "As per Borzo/Porter",
-    });
-  }
-
-  if (bill.totals.discount > 0) {
-    lines.push({
-      left: "Discount:",
-      right: `-INR ${bill.totals.discount}`,
-    });
-  }
-
-  lines.push({
-    left: `Mode: ${bill.payment.mode === "RAZORPAY" ? "Online" : bill.payment.mode}`,
-    right: `Total: INR ${bill.totals.grandTotal}`,
+    left: `Mode: ${bill.payment.mode === "RAZORPAY" ? "Online (Pre-Paid)" : bill.payment.mode}`,
+    right: isPickup ? "Self-Pickup" : "Delivery",
     bold: true,
   });
 
