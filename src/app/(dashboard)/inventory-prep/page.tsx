@@ -269,7 +269,7 @@ export default function InventoryPrepPage() {
               Inventory & Prep Planning
             </h2>
             <p className="text-muted-foreground text-sm">
-              Calculate accurate ingredient requirements, dish portions, and batch schedules for upcoming kitchen pre-orders.
+              Calculate accurate ingredient requirements, dish plates, and batch schedules for upcoming kitchen pre-orders.
             </p>
           </div>
 
@@ -397,11 +397,11 @@ export default function InventoryPrepPage() {
           </CardContent>
         </Card>
 
-        {/* Total Portions to Cook */}
+        {/* Total Plates to Cook */}
         <Card className="shadow-xs border-border/80 print-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
-              <span>Portions to Cook</span>
+              <span>Plates to Cook</span>
               <ChefHat className="h-3.5 w-3.5 text-amber-500" />
             </div>
             <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
@@ -629,7 +629,7 @@ export default function InventoryPrepPage() {
                         </Badge>
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        Exact portion quantities to prepare for the {formatHumanDate(selectedDate)} kitchen run.
+                        Exact plate quantities to prepare for the {formatHumanDate(selectedDate)} kitchen run.
                       </CardDescription>
                     </div>
 
@@ -661,7 +661,7 @@ export default function InventoryPrepPage() {
                       </div>
 
                       <div className="text-xs font-semibold text-muted-foreground hidden md:block">
-                        Total: <span className="text-foreground">{data.summary.totalPortions} Portions</span>
+                        Total: <span className="text-foreground">{data.summary.totalPortions} Plates</span>
                       </div>
                     </div>
                   </div>
@@ -674,7 +674,7 @@ export default function InventoryPrepPage() {
                         <TableHead className="w-[300px]">Dish / Item</TableHead>
                         <TableHead className="w-[90px] text-center">Type</TableHead>
                         <TableHead className="w-[150px] text-center bg-amber-500/5 dark:bg-amber-500/10 font-bold text-foreground">
-                          Portions to Cook
+                          Plates to Cook
                         </TableHead>
                         <TableHead className="w-[120px] text-center">
                           Total Pieces
@@ -716,11 +716,11 @@ export default function InventoryPrepPage() {
                             </span>
                           </TableCell>
 
-                          {/* Total Portions to Cook */}
+                          {/* Total Plates to Cook */}
                           <TableCell className="text-center font-black text-base text-amber-700 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10">
                             {dish.totalPortions}
                             <span className="text-xs font-normal text-muted-foreground ml-1">
-                              {dish.totalPortions === 1 ? "portion" : "portions"}
+                              {dish.totalPortions === 1 ? "plate" : "plates"}
                             </span>
                           </TableCell>
 
@@ -771,7 +771,7 @@ export default function InventoryPrepPage() {
                                           {dish.productName}
                                         </div>
                                         <div className="text-[10px] text-muted-foreground">
-                                          {dish.totalPortions} total {dish.totalPortions === 1 ? "portion" : "portions"}
+                                          {dish.totalPortions} total {dish.totalPortions === 1 ? "plate" : "plates"}
                                         </div>
                                       </div>
                                       <Badge variant="outline" className="text-[10px] font-mono">
@@ -780,7 +780,7 @@ export default function InventoryPrepPage() {
                                     </div>
 
                                     <div className="text-[11px] font-medium text-muted-foreground">
-                                      Portions needed per dispatch window:
+                                      Plates needed per dispatch window:
                                     </div>
 
                                     <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
@@ -796,7 +796,7 @@ export default function InventoryPrepPage() {
                                             </span>
                                           </div>
                                           <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
-                                            {s.quantity} {s.quantity === 1 ? "portion" : "portions"}
+                                            {s.quantity} {s.quantity === 1 ? "plate" : "plates"}
                                           </span>
                                         </div>
                                       ))}
@@ -1060,7 +1060,7 @@ export default function InventoryPrepPage() {
             <div className="mt-2 pt-1.5 border-t border-black/40 flex items-center justify-between text-xs font-mono font-bold text-black">
               <span>ORDERS: {data.summary.totalOrders} ({data.summary.deliveryOrders} Del / {data.summary.pickupOrders} Pick)</span>
               <span>•</span>
-              <span>PORTIONS: {data.summary.totalPortions} ({data.summary.vegPortions} VEG / {data.summary.nonVegPortions} NON-VEG)</span>
+              <span>PLATES: {data.summary.totalPortions} ({data.summary.vegPortions} VEG / {data.summary.nonVegPortions} NON-VEG)</span>
               <span>•</span>
               <span>BATCH WINDOWS: {data.slots.length} SLOTS</span>
             </div>
@@ -1070,7 +1070,7 @@ export default function InventoryPrepPage() {
           <div>
             <div className="text-xs font-black uppercase tracking-wider mb-1 flex items-center justify-between text-black">
               <span>Production Dishes Checklist ({data.dishes.length} Items)</span>
-              <span className="font-mono text-[9px] font-normal">All numbers represent portions to fire</span>
+              <span className="font-mono text-[9px] font-normal">All numbers represent plates to fire</span>
             </div>
 
             <table className="w-full border-collapse border border-black text-xs">
@@ -1139,7 +1139,7 @@ export default function InventoryPrepPage() {
               <tfoot>
                 <tr className="bg-gray-200 font-bold border-t-2 border-black text-black">
                   <td colSpan={2} className="border border-black p-1.5 text-right uppercase text-[10px] font-bold text-black">
-                    Batch Totals:
+                    Total Plates Per Batch:
                   </td>
                   <td className="border border-black p-1.5 text-center font-mono font-black text-xs text-black">
                     {data.summary.totalPortions}
