@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { OrderEventsProvider } from "@/hooks/use-order-events";
+import { OrderAudioControl } from "@/components/order-audio-control";
 import {
   Sidebar,
   SidebarContent,
@@ -94,86 +96,93 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar variant="inset">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" render={<Link href="/" />}>
-                <div className="grid flex-1 text-left text-sm leading-tight px-1">
-                  <span className="truncate font-bold text-base text-foreground tracking-tight">Nepali Tales</span>
-                  <span className="truncate text-xs text-muted-foreground">Admin Panel</span>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={pathname === item.href}
-                      tooltip={item.title}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-12 cursor-pointer">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {admin?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "A"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{admin?.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">{admin?.email}</span>
+    <OrderEventsProvider>
+      <SidebarProvider>
+        <Sidebar variant="inset">
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" render={<Link href="/" />}>
+                  <div className="grid flex-1 text-left text-sm leading-tight px-1">
+                    <span className="truncate font-bold text-base text-foreground tracking-tight">Nepali Tales</span>
+                    <span className="truncate text-xs text-muted-foreground">Admin Panel</span>
                   </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
-                  side="bottom"
-                  align="end"
-                  sideOffset={4}
-                >
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
 
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <h1 className="text-sm font-medium">
-            {navItems.find((item) => item.href === pathname)?.title || "Dashboard"}
-          </h1>
-        </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Management</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        render={<Link href={item.href} />}
+                        isActive={pathname === item.href}
+                        tooltip={item.title}
+                      >
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-12 cursor-pointer">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {admin?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">{admin?.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">{admin?.email}</span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+                    side="bottom"
+                    align="end"
+                    sideOffset={4}
+                  >
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+        </Sidebar>
+
+        <SidebarInset>
+          <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <h1 className="text-sm font-medium">
+                {navItems.find((item) => item.href === pathname)?.title || "Dashboard"}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <OrderAudioControl />
+            </div>
+          </header>
+          <main className="flex-1 p-4 md:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </OrderEventsProvider>
   );
 }

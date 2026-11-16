@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useOrderEvents } from "@/hooks/use-order-events";
 import {
   getInventoryPrep,
   type InventoryPrepResponse,
@@ -158,6 +159,13 @@ export default function InventoryPrepPage() {
   useEffect(() => {
     fetchPrepPlan(selectedDate);
   }, [fetchPrepPlan, selectedDate]);
+
+  // Live real-time sync: silently refresh kitchen prep when new orders arrive
+  useOrderEvents({
+    onOrderChange: () => {
+      fetchPrepPlan(selectedDate);
+    },
+  });
 
   // Filtered dishes for display
   const filteredDishes = useMemo(() => {
