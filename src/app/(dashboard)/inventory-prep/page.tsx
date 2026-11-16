@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -93,6 +94,36 @@ function formatCurrency(amount: number): string {
 }
 
 /**
+ * Condense standard dispatch slot label like "02:00 PM - 03:00 PM" -> "2–3 PM"
+ * or "11:30 AM - 01:00 PM" -> "11:30 AM–1 PM"
+ */
+function formatSlotTimeShort(rawLabel: string): string {
+  if (!rawLabel) return "";
+  const parenMatch = rawLabel.match(/\((.*?)\)/);
+  const candidate = parenMatch ? parenMatch[1] : rawLabel.split("(")[0].trim();
+
+  const match = candidate.match(
+    /^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*[-–—to ]+\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i
+  );
+  if (match) {
+    const [, startH, startM, startP, endH, endM, endP] = match;
+    const startHour = parseInt(startH, 10);
+    const endHour = parseInt(endH, 10);
+    const startPeriod = startP.toUpperCase();
+    const endPeriod = endP.toUpperCase();
+
+    const startTime = startM && startM !== "00" ? `${startHour}:${startM}` : `${startHour}`;
+    const endTime = endM && endM !== "00" ? `${endHour}:${endM}` : `${endHour}`;
+
+    if (startPeriod === endPeriod) {
+      return `${startTime}–${endTime} ${endPeriod}`;
+    }
+    return `${startTime} ${startPeriod}–${endTime} ${endPeriod}`;
+  }
+  return candidate.replace(/^0(\d)/, "$1").trim();
+}
+
+/**
  * Clean CSV export for kitchen inventory purchasing & prep
  */
 function exportPrepPlanToCsv(data: InventoryPrepResponse) {
@@ -157,6 +188,9 @@ export default function InventoryPrepPage() {
   // Filter dishes by veg/non-veg
   const [foodFilter, setFoodFilter] = useState<"all" | "veg" | "non-veg">("all");
   const [dishSearch, setDishSearch] = useState<string>("");
+
+  // Batch needs display mode: "compact" (first 2 + popover) vs "expanded" (all chips)
+  const [batchViewMode, setBatchViewMode] = useState<"compact" | "expanded">("compact");
 
   const fetchPrepPlan = useCallback(async (date: string) => {
     setLoading(true);
@@ -629,7 +663,7 @@ export default function InventoryPrepPage() {
               {/* Dishes Table */}
               <Card className="border-border/80 shadow-xs overflow-hidden print-card">
                 <CardHeader className="py-3.5 px-4 bg-muted/40 border-b border-border/60">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <span>Production Dishes Checklist</span>
@@ -642,8 +676,36 @@ export default function InventoryPrepPage() {
                       </CardDescription>
                     </div>
 
-                    <div className="text-xs font-semibold text-muted-foreground">
-                      Total: <span className="text-foreground">{data.summary.totalPortions} Portions</span>
+                    <div className="flex items-center gap-3">
+                      {/* Compact vs Show All Batches Toggle */}
+                      <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 text-xs no-print">
+                        <button
+                          type="button"
+                          onClick={() => setBatchViewMode("compact")}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                            batchViewMode === "compact"
+                              ? "bg-muted text-foreground font-semibold shadow-2xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Compact Batches
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBatchViewMode("expanded")}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                            batchViewMode === "expanded"
+                              ? "bg-muted text-foreground font-semibold shadow-2xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Show All Batches
+                        </button>
+                      </div>
+
+                      <div className="text-xs font-semibold text-muted-foreground hidden md:block">
+                        Total: <span className="text-foreground">{data.summary.totalPortions} Portions</span>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -652,16 +714,16 @@ export default function InventoryPrepPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/20">
-                        <TableHead className="w-[320px]">Dish / Item</TableHead>
-                        <TableHead className="w-[100px] text-center">Type</TableHead>
-                        <TableHead className="w-[160px] text-center bg-amber-500/5 dark:bg-amber-500/10 font-bold text-foreground">
+                        <TableHead className="w-[300px]">Dish / Item</TableHead>
+                        <TableHead className="w-[90px] text-center">Type</TableHead>
+                        <TableHead className="w-[150px] text-center bg-amber-500/5 dark:bg-amber-500/10 font-bold text-foreground">
                           Portions to Cook
                         </TableHead>
-                        <TableHead className="w-[140px] text-center">
+                        <TableHead className="w-[120px] text-center">
                           Total Pieces
                         </TableHead>
-                        <TableHead className="w-[280px]">Dispatch Batch Needs</TableHead>
-                        <TableHead className="w-[120px] text-right">Orders</TableHead>
+                        <TableHead className="min-w-[260px]">Dispatch Batch Needs</TableHead>
+                        <TableHead className="w-[110px] text-right">Orders</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -716,23 +778,102 @@ export default function InventoryPrepPage() {
                             )}
                           </TableCell>
 
-                          {/* Slot Breakdown */}
+                          {/* Slot Breakdown - Clean Compact Badges with Popover */}
                           <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {dish.slots.map((s, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-muted font-medium text-foreground border border-border/60"
-                                >
-                                  <span className="truncate max-w-[140px] text-muted-foreground">
-                                    {s.slotLabel.split("(")[0].trim()}:
+                            {dish.slots.length === 0 ? (
+                              <span className="text-muted-foreground text-xs italic">
+                                No batch assigned
+                              </span>
+                            ) : batchViewMode === "compact" && dish.slots.length > 2 ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {/* First 2 key batches shown directly */}
+                                {dish.slots.slice(0, 2).map((s, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs no-print"
+                                    title={s.slotLabel}
+                                  >
+                                    <span className="text-muted-foreground font-medium">
+                                      {formatSlotTimeShort(s.slotLabel)}
+                                    </span>
+                                    <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                                      {s.quantity}
+                                    </span>
                                   </span>
-                                  <span className="font-bold font-mono text-primary">
-                                    {s.quantity}
+                                ))}
+
+                                {/* Interactive Popover for Remaining Batches */}
+                                <Popover>
+                                  <PopoverTrigger className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20 transition-all font-semibold cursor-pointer no-print">
+                                    <span>+{dish.slots.length - 2} more batches</span>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" className="w-80 p-3 space-y-2.5 shadow-lg border-border">
+                                    <div className="flex items-center justify-between border-b border-border pb-2">
+                                      <div>
+                                        <div className="font-bold text-xs text-foreground truncate max-w-[190px]">
+                                          {dish.productName}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground">
+                                          {dish.totalPortions} total {dish.totalPortions === 1 ? "portion" : "portions"}
+                                        </div>
+                                      </div>
+                                      <Badge variant="outline" className="text-[10px] font-mono">
+                                        {dish.slots.length} batches
+                                      </Badge>
+                                    </div>
+
+                                    <div className="text-[11px] font-medium text-muted-foreground">
+                                      Portions needed per dispatch window:
+                                    </div>
+
+                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                      {dish.slots.map((s, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="flex items-center justify-between p-1.5 rounded-md bg-muted/40 border border-border/40 text-xs"
+                                        >
+                                          <div className="flex items-center gap-1.5">
+                                            <Clock className="h-3 w-3 text-muted-foreground" />
+                                            <span className="font-medium text-foreground">
+                                              {formatSlotTimeShort(s.slotLabel)}
+                                            </span>
+                                          </div>
+                                          <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
+                                            {s.quantity} {s.quantity === 1 ? "portion" : "portions"}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+
+                                {/* Print view: Full list printed cleanly on paper */}
+                                <div className="hidden print:flex print:flex-wrap print:gap-1 text-[10px]">
+                                  {dish.slots.map((s, idx) => (
+                                    <span key={idx} className="mr-2">
+                                      {formatSlotTimeShort(s.slotLabel)}: <strong>{s.quantity}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {dish.slots.map((s, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs hover:bg-muted transition-colors"
+                                    title={s.slotLabel}
+                                  >
+                                    <span className="text-muted-foreground font-medium">
+                                      {formatSlotTimeShort(s.slotLabel)}:
+                                    </span>
+                                    <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                                      {s.quantity}
+                                    </span>
                                   </span>
-                                </span>
-                              ))}
-                            </div>
+                                ))}
+                              </div>
+                            )}
                           </TableCell>
 
                           {/* Order Appearance Count */}
