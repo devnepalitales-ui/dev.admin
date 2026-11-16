@@ -25,7 +25,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Printer,
   RefreshCw,
   Clock,
   AlertCircle,
@@ -176,14 +175,10 @@ export default function InventoryPrepPage() {
     });
   }, [data?.dishes, foodFilter, dishSearch]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <div className="space-y-6 pb-12 print:space-y-3">
+    <div className="space-y-6 pb-12">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
@@ -214,17 +209,6 @@ export default function InventoryPrepPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handlePrint}
-            disabled={loading || !data?.summary.totalOrders}
-            className="text-xs gap-1.5 h-9"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Print Prep Sheet
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
             onClick={() => fetchPrepPlan(selectedDate)}
             disabled={loading}
             className="text-xs gap-1.5 h-9"
@@ -236,7 +220,7 @@ export default function InventoryPrepPage() {
       </div>
 
       {/* Date Selector Navigation Bar */}
-      <Card className="no-print border-border/80 shadow-xs">
+      <Card className="border-border/80 shadow-xs">
         <CardContent className="p-3.5">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Quick Date Pills */}
@@ -313,27 +297,10 @@ export default function InventoryPrepPage() {
         </CardContent>
       </Card>
 
-      {/* Print-Only Title Banner */}
-      <div className="hidden print:block mb-3 border-b border-border pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Nepali Tales Cloud Kitchen
-            </h1>
-            <p className="text-xs text-muted-foreground font-medium">
-              Kitchen Production Order & Prep Manifest • {formatHumanDate(selectedDate)}
-            </p>
-          </div>
-          <div className="text-right text-xs font-mono text-muted-foreground">
-            Printed at: {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-          </div>
-        </div>
-      </div>
-
       {/* KPI Overview Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Total Orders */}
-        <Card className="shadow-xs border-border/80 print-card">
+        <Card className="shadow-xs border-border/80">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Confirmed Orders</span>
@@ -351,7 +318,7 @@ export default function InventoryPrepPage() {
         </Card>
 
         {/* Total Plates to Cook */}
-        <Card className="shadow-xs border-border/80 print-card">
+        <Card className="shadow-xs border-border/80">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Plates to Cook</span>
@@ -375,7 +342,7 @@ export default function InventoryPrepPage() {
         </Card>
 
         {/* Add-ons & Sides to Prep */}
-        <Card className="shadow-xs border-border/80 print-card">
+        <Card className="shadow-xs border-border/80">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Add-ons & Dips</span>
@@ -391,7 +358,7 @@ export default function InventoryPrepPage() {
         </Card>
 
         {/* Batch Timing / Value */}
-        <Card className="shadow-xs border-border/80 print-card">
+        <Card className="shadow-xs border-border/80">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Batch Slots & Value</span>
@@ -409,7 +376,7 @@ export default function InventoryPrepPage() {
 
       {/* Special Dietary & Customer Instructions Alert Banner */}
       {!loading && data?.specialNotes && data.specialNotes.length > 0 && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 print-card">
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div className="flex-1">
@@ -441,7 +408,7 @@ export default function InventoryPrepPage() {
       )}
 
       {/* Navigation View Tabs (Dishes, Batch Slots, Customer Notes, Full Roster) */}
-      <div className="no-print flex items-center justify-between gap-3 border-b border-border/80 pb-2">
+      <div className="flex items-center justify-between gap-3 border-b border-border/80 pb-2">
         <div className="flex items-center gap-1.5">
           <Button
             variant={activeTab === "dishes" ? "secondary" : "ghost"}
@@ -571,7 +538,7 @@ export default function InventoryPrepPage() {
           {(activeTab === "dishes" || typeof window === "undefined") && (
             <div className="space-y-6">
               {/* Dishes Table */}
-              <Card className="border-border/80 shadow-xs overflow-hidden print-card">
+              <Card className="border-border/80 shadow-xs overflow-hidden">
                 <CardHeader className="py-3.5 px-4 bg-muted/40 border-b border-border/60">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -588,7 +555,7 @@ export default function InventoryPrepPage() {
 
                     <div className="flex items-center gap-3">
                       {/* Compact vs Show All Batches Toggle */}
-                      <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 text-xs no-print">
+                      <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 text-xs">
                         <button
                           type="button"
                           onClick={() => setBatchViewMode("compact")}
@@ -695,85 +662,65 @@ export default function InventoryPrepPage() {
                                 No batch assigned
                               </span>
                             ) : batchViewMode === "compact" && dish.slots.length > 2 ? (
-                              <div>
-                                {/* Screen Compact Mode: First 2 + Popover */}
-                                <div className="flex items-center gap-1.5 flex-wrap no-print">
-                                  {dish.slots.slice(0, 2).map((s, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs"
-                                      title={s.slotLabel}
-                                    >
-                                      <span className="text-muted-foreground font-medium">
-                                        {formatSlotTimeShort(s.slotLabel)}
-                                      </span>
-                                      <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
-                                        {s.quantity}
-                                      </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {dish.slots.slice(0, 2).map((s, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/60 shadow-2xs"
+                                    title={s.slotLabel}
+                                  >
+                                    <span className="text-muted-foreground font-medium">
+                                      {formatSlotTimeShort(s.slotLabel)}
                                     </span>
-                                  ))}
+                                    <span className="font-bold font-mono text-primary bg-primary/10 px-1 py-0.5 rounded text-[10px]">
+                                      {s.quantity}
+                                    </span>
+                                  </span>
+                                ))}
 
-                                  <Popover>
-                                    <PopoverTrigger className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20 transition-all font-semibold cursor-pointer">
-                                      <span>+{dish.slots.length - 2} more batches</span>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="start" className="w-80 p-3 space-y-2.5 shadow-lg border-border">
-                                      <div className="flex items-center justify-between border-b border-border pb-2">
-                                        <div>
-                                          <div className="font-bold text-xs text-foreground truncate max-w-[190px]">
-                                            {dish.productName}
-                                          </div>
-                                          <div className="text-[10px] text-muted-foreground">
-                                            {dish.totalPortions} total {dish.totalPortions === 1 ? "plate" : "plates"}
-                                          </div>
+                                <Popover>
+                                  <PopoverTrigger className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20 transition-all font-semibold cursor-pointer">
+                                    <span>+{dish.slots.length - 2} more batches</span>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" className="w-80 p-3 space-y-2.5 shadow-lg border-border">
+                                    <div className="flex items-center justify-between border-b border-border pb-2">
+                                      <div>
+                                        <div className="font-bold text-xs text-foreground truncate max-w-[190px]">
+                                          {dish.productName}
                                         </div>
-                                        <Badge variant="outline" className="text-[10px] font-mono">
-                                          {dish.slots.length} batches
-                                        </Badge>
+                                        <div className="text-[10px] text-muted-foreground">
+                                          {dish.totalPortions} total {dish.totalPortions === 1 ? "plate" : "plates"}
+                                        </div>
                                       </div>
+                                      <Badge variant="outline" className="text-[10px] font-mono">
+                                        {dish.slots.length} batches
+                                      </Badge>
+                                    </div>
 
-                                      <div className="text-[11px] font-medium text-muted-foreground">
-                                        Plates needed per dispatch window:
-                                      </div>
+                                    <div className="text-[11px] font-medium text-muted-foreground">
+                                      Plates needed per dispatch window:
+                                    </div>
 
-                                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                                        {dish.slots.map((s, idx) => (
-                                          <div
-                                            key={idx}
-                                            className="flex items-center justify-between p-1.5 rounded-md bg-muted/40 border border-border/40 text-xs"
-                                          >
-                                            <div className="flex items-center gap-1.5">
-                                              <Clock className="h-3 w-3 text-muted-foreground" />
-                                              <span className="font-medium text-foreground">
-                                                {formatSlotTimeShort(s.slotLabel)}
-                                              </span>
-                                            </div>
-                                            <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
-                                              {s.quantity} {s.quantity === 1 ? "plate" : "plates"}
+                                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                                      {dish.slots.map((s, idx) => (
+                                        <div
+                                          key={idx}
+                                          className="flex items-center justify-between p-1.5 rounded-md bg-muted/40 border border-border/40 text-xs"
+                                        >
+                                          <div className="flex items-center gap-1.5">
+                                            <Clock className="h-3 w-3 text-muted-foreground" />
+                                            <span className="font-medium text-foreground">
+                                              {formatSlotTimeShort(s.slotLabel)}
                                             </span>
                                           </div>
-                                        ))}
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                </div>
-
-                                {/* Print View: Symmetrical, clean 2-column grid of all slots */}
-                                <div className="hidden print:grid print:grid-cols-2 print:gap-1 w-full text-[10px]">
-                                  {dish.slots.map((s, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex items-center justify-between px-1.5 py-0.5 rounded bg-muted/50 border border-border/60 text-[10px]"
-                                    >
-                                      <span className="text-muted-foreground font-medium">
-                                        {formatSlotTimeShort(s.slotLabel)}
-                                      </span>
-                                      <span className="font-bold font-mono text-foreground ml-1">
-                                        {s.quantity}
-                                      </span>
+                                          <span className="font-bold font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[11px]">
+                                            {s.quantity} {s.quantity === 1 ? "plate" : "plates"}
+                                          </span>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 gap-1 w-full">
@@ -808,7 +755,7 @@ export default function InventoryPrepPage() {
 
               {/* Addons & Condiments Prep Table */}
               {data.addons.length > 0 && (
-                <Card className="border-border/80 shadow-xs overflow-hidden print-card">
+                <Card className="border-border/80 shadow-xs overflow-hidden">
                   <CardHeader className="py-3 px-4 bg-muted/40 border-b border-border/60">
                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                       <Layers className="h-3.5 w-3.5 text-indigo-500" />
@@ -849,7 +796,7 @@ export default function InventoryPrepPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.slots.map((slot) => (
-                  <Card key={slot.slotId} className="border-border/80 shadow-xs print-card">
+                  <Card key={slot.slotId} className="border-border/80 shadow-xs">
                     <CardHeader className="py-3 px-4 bg-muted/30 border-b border-border/60">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
