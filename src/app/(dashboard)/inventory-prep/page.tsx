@@ -137,7 +137,7 @@ export default function InventoryPrepPage() {
 
   // Filter dishes by veg/non-veg and category
   const [foodFilter, setFoodFilter] = useState<"all" | "veg" | "non-veg">("all");
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "momo" | "jhol" | "shaphaley">("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "momo" | "jhol" | "shaphaley" | "addons">("all");
   const [dishSearch, setDishSearch] = useState<string>("");
 
   // Batch needs display mode: "compact" (first 2 + popover) vs "expanded" (all chips)
@@ -168,22 +168,66 @@ export default function InventoryPrepPage() {
     },
   });
 
-  // Kitchen Production Metrics: Item Breakdown by Category (Momo, Jhol Momo, Shaphaley) and Type (Veg, Chicken)
+  // Kitchen Production Metrics: Accurate Food Dishes Breakdown (Momo, Jhol Momo, Shaphaley) + Add-ons & Dips
   const productionMetrics = useMemo(() => {
     const dishes = data?.dishes || [];
 
+    // Helper: Identify if an item is an add-on, dip, condiment, or sauce
+    const isAddonItem = (d: InventoryPrepDish) => {
+      const slug = (d.categorySlug || "").toLowerCase();
+      const name = (d.productName || "").toLowerCase();
+      const id = (d.productId || "").toLowerCase();
+      return (
+        id.startsWith("addon_") ||
+        slug === "addons" ||
+        name.includes("chutney") ||
+        name.includes("oil") ||
+        name.includes("dip") ||
+        name.includes("sauce") ||
+        (name.includes("jhol") && !name.includes("momo"))
+      );
+    };
+
     const isShaphaley = (d: InventoryPrepDish) => {
+      if (isAddonItem(d)) return false;
       const slug = (d.categorySlug || "").toLowerCase();
       const name = (d.productName || "").toLowerCase();
       return slug.includes("shaphaley") || name.includes("shaphaley");
     };
 
     const isJhol = (d: InventoryPrepDish) => {
+      if (isAddonItem(d)) return false;
       const slug = (d.categorySlug || "").toLowerCase();
       const name = (d.productName || "").toLowerCase();
-      return slug.includes("jhol") || name.includes("jhol");
+      return (slug.includes("jhol") || name.includes("jhol")) && name.includes("momo");
     };
 
+    const isMomo = (d: InventoryPrepDish) => {
+      return !isAddonItem(d) && !isShaphaley(d) && !isJhol(d);
+    };
+
+    // Aggregate Add-ons & Dips from both data.addons and any standalone addon items
+    const addonMap = new Map<string, { name: string; quantity: number; orderCount?: number }>();
+    for (const a of data?.addons || []) {
+      addonMap.set(a.name, {
+        name: a.name,
+        quantity: (addonMap.get(a.name)?.quantity || 0) + a.totalQuantity,
+        orderCount: a.orderCount,
+      });
+    }
+    for (const d of dishes) {
+      if (isAddonItem(d)) {
+        addonMap.set(d.productName, {
+          name: d.productName,
+          quantity: (addonMap.get(d.productName)?.quantity || 0) + d.totalPortions,
+          orderCount: d.orderCount,
+        });
+      }
+    }
+    const addonsList = Array.from(addonMap.values());
+    const totalAddons = addonsList.reduce((sum, a) => sum + a.quantity, 0) || (data?.summary?.totalAddons ?? 0);
+
+    // Food Plates to cook: ONLY actual momos, jhol momos, and shaphaley
     let vegPlates = 0;
     let chickenPlates = 0;
 
@@ -197,6 +241,8 @@ export default function InventoryPrepPage() {
     let shaphaleyChicken = 0;
 
     for (const d of dishes) {
+      if (isAddonItem(d)) continue; // Never count chutneys or extra dips into cooking plates!
+
       const plates = d.totalPortions || 0;
       const isVeg = d.type === "veg";
 
@@ -212,16 +258,20 @@ export default function InventoryPrepPage() {
       } else if (isJhol(d)) {
         if (isVeg) jholVeg += plates;
         else jholChicken += plates;
-      } else {
+      } else if (isMomo(d)) {
         if (isVeg) momoVeg += plates;
         else momoChicken += plates;
       }
     }
 
-    const totalPlates = vegPlates + chickenPlates || data?.summary?.totalPortions || 0;
+    const totalPlates = vegPlates + chickenPlates;
     const momoTotal = momoVeg + momoChicken;
     const jholTotal = jholVeg + jholChicken;
     const shaphaleyTotal = shaphaleyVeg + shaphaleyChicken;
+
+    const summaryLabel = addonsList
+      .map((a) => `${a.name.replace(/ Chutney| Oil/i, "")}: ${a.quantity}`)
+      .join(" • ");
 
     return {
       totalPlates,
@@ -246,6 +296,11 @@ export default function InventoryPrepPage() {
           chicken: shaphaleyChicken,
           percentage: totalPlates > 0 ? Math.round((shaphaleyTotal / totalPlates) * 100) : 0,
         },
+        addons: {
+          total: totalAddons,
+          items: addonsList,
+          summaryLabel,
+        },
       },
       typeBreakdown: {
         veg: {
@@ -266,13 +321,28 @@ export default function InventoryPrepPage() {
   const filteredDishes = useMemo(() => {
     if (!data?.dishes) return [];
     return data.dishes.filter((dish) => {
+      const isAddonDish =
+        dish.productId?.startsWith("addon_") ||
+        dish.categorySlug === "addons" ||
+        dish.productName.toLowerCase().includes("chutney") ||
+        dish.productName.toLowerCase().includes("oil") ||
+        dish.productName.toLowerCase().includes("dip") ||
+        dish.productName.toLowerCase().includes("sauce") ||
+        (dish.productName.toLowerCase().includes("jhol") && !dish.productName.toLowerCase().includes("momo"));
+
       if (foodFilter !== "all" && dish.type !== foodFilter) return false;
 
       if (categoryFilter !== "all") {
+        if (categoryFilter === "addons") {
+          return isAddonDish;
+        }
+
+        if (isAddonDish) return false;
+
         const slug = (dish.categorySlug || "").toLowerCase();
         const name = (dish.productName || "").toLowerCase();
         const isShaphaley = slug.includes("shaphaley") || name.includes("shaphaley");
-        const isJhol = slug.includes("jhol") || name.includes("jhol");
+        const isJhol = (slug.includes("jhol") || name.includes("jhol")) && name.includes("momo");
         const isMomo = !isShaphaley && !isJhol;
 
         if (categoryFilter === "shaphaley" && !isShaphaley) return false;
@@ -433,42 +503,42 @@ export default function InventoryPrepPage() {
           </CardContent>
         </Card>
 
-        {/* Total Plates to Cook */}
-        <Card className="shadow-xs border-border/80">
+        {/* Total Plates to Cook (Food Dishes Only) */}
+        <Card className="shadow-xs border-amber-500/20 bg-amber-500/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Plates to Cook</span>
               <ChefHat className="h-3.5 w-3.5 text-amber-500" />
             </div>
             <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-              {loading ? <Skeleton className="h-8 w-16" /> : data?.summary.totalPortions ?? 0}
+              {loading ? <Skeleton className="h-8 w-16" /> : productionMetrics.totalPlates}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1.5 font-medium">
               <span className="text-emerald-600 flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
-                {data?.summary.vegPortions ?? 0} Veg
+                {productionMetrics.vegPlates} Veg
               </span>
               <span>•</span>
               <span className="text-rose-600 flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block" />
-                {data?.summary.nonVegPortions ?? 0} Non-Veg
+                {productionMetrics.chickenPlates} Non-Veg
               </span>
             </div>
           </CardContent>
         </Card>
 
         {/* Add-ons & Sides to Prep */}
-        <Card className="shadow-xs border-border/80">
+        <Card className="shadow-xs border-cyan-500/20 bg-cyan-500/5">
           <CardContent className="p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs font-medium mb-1">
               <span>Add-ons & Dips</span>
-              <Layers className="h-3.5 w-3.5 text-indigo-500" />
+              <Layers className="h-3.5 w-3.5 text-cyan-500" />
             </div>
-            <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-              {loading ? <Skeleton className="h-8 w-16" /> : data?.summary.totalAddons ?? 0}
+            <div className="text-2xl font-black text-cyan-600 dark:text-cyan-400">
+              {loading ? <Skeleton className="h-8 w-16" /> : productionMetrics.categories.addons.total}
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              <span>Chutneys, extra dips & beverages</span>
+            <div className="text-[11px] text-muted-foreground mt-1 truncate" title={productionMetrics.categories.addons.summaryLabel}>
+              <span>{productionMetrics.categories.addons.summaryLabel || "Chutneys, extra dips & beverages"}</span>
             </div>
           </CardContent>
         </Card>
@@ -501,20 +571,25 @@ export default function InventoryPrepPage() {
                   Kitchen Production Dashboard
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Total plates required broken down by Category (Momo, Jhol Momo, Shaphaley) and Type (Veg, Chicken)
+                  Total plates required broken down by Category (Momo, Jhol Momo, Shaphaley), Type (Veg, Chicken) and Add-ons
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs font-bold font-mono px-2.5 py-1 bg-background border-amber-500/30">
                   Total: <span className="text-amber-500 ml-1">{productionMetrics.totalPlates} Plates to Cook</span>
                 </Badge>
+                {productionMetrics.categories.addons.total > 0 && (
+                  <Badge variant="outline" className="text-xs font-bold font-mono px-2 py-1 bg-background border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+                    +{productionMetrics.categories.addons.total} Dips/Add-ons
+                  </Badge>
+                )}
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="p-4 space-y-4">
-            {/* 5 Quick-Glance Production Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* 6 Quick-Glance Production Cards: Veg, Chicken, Momo, Jhol Momo, Shaphaley, Add-ons & Dips */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {/* 1. Veg Plates Total */}
               <div
                 onClick={() => setFoodFilter(foodFilter === "veg" ? "all" : "veg")}
@@ -632,7 +707,7 @@ export default function InventoryPrepPage() {
               {/* 5. Shaphaley Category */}
               <div
                 onClick={() => setCategoryFilter(categoryFilter === "shaphaley" ? "all" : "shaphaley")}
-                className={`rounded-xl border p-3 cursor-pointer transition-all col-span-2 lg:col-span-1 ${
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
                   categoryFilter === "shaphaley"
                     ? "border-indigo-500 bg-indigo-500/15 ring-2 ring-indigo-500/30"
                     : "border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10"
@@ -655,6 +730,33 @@ export default function InventoryPrepPage() {
                   <span className="text-emerald-600 dark:text-emerald-400 font-medium">{productionMetrics.categories.shaphaley.veg} Veg</span>
                   <span>•</span>
                   <span className="text-rose-600 dark:text-rose-400 font-medium">{productionMetrics.categories.shaphaley.chicken} Chicken</span>
+                </div>
+              </div>
+
+              {/* 6. Add-ons & Dips Card (Separate so it doesn't inflate Plates to Cook) */}
+              <div
+                onClick={() => setCategoryFilter(categoryFilter === "addons" ? "all" : "addons")}
+                className={`rounded-xl border p-3 cursor-pointer transition-all ${
+                  categoryFilter === "addons"
+                    ? "border-cyan-500 bg-cyan-500/15 ring-2 ring-cyan-500/30"
+                    : "border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/10"
+                }`}
+                title="Click to filter table below by Add-ons & Dips"
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-cyan-600 dark:text-cyan-400 mb-1">
+                  <span className="flex items-center gap-1.5 font-bold">
+                    Add-ons &amp; Dips
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-bold">
+                    EXTRA
+                  </Badge>
+                </div>
+                <div className="text-2xl font-black text-foreground">
+                  {productionMetrics.categories.addons.total}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">units</span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1 truncate" title={productionMetrics.categories.addons.summaryLabel}>
+                  {productionMetrics.categories.addons.summaryLabel || "Chutneys, extra dips"}
                 </div>
               </div>
             </div>
@@ -776,10 +878,10 @@ export default function InventoryPrepPage() {
                     </TableCell>
                   </TableRow>
 
-                  {/* Summary Total Row */}
+                  {/* Summary Total Row (Food Plates) */}
                   <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
                     <TableCell className="text-foreground uppercase tracking-wider text-[11px] py-3">
-                      Total Production Run
+                      Total Production Run (Dishes)
                     </TableCell>
                     <TableCell className="text-center font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
                       {productionMetrics.vegPlates} Veg
@@ -794,6 +896,30 @@ export default function InventoryPrepPage() {
                       100%
                     </TableCell>
                   </TableRow>
+
+                  {/* Add-ons & Condiments Summary Row */}
+                  {productionMetrics.categories.addons.total > 0 && (
+                    <TableRow className="bg-cyan-500/5 font-medium border-t border-dashed border-border/80">
+                      <TableCell className="text-cyan-700 dark:text-cyan-400 font-semibold text-[11px] py-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5" />
+                          <span>Add-ons, Chutneys &amp; Dips</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-muted-foreground text-xs">
+                        {productionMetrics.categories.addons.total} units
+                      </TableCell>
+                      <TableCell className="text-center font-mono text-muted-foreground text-xs">
+                        —
+                      </TableCell>
+                      <TableCell className="text-center font-mono font-bold text-cyan-600 dark:text-cyan-400 text-xs">
+                        {productionMetrics.categories.addons.total} units
+                      </TableCell>
+                      <TableCell className="text-right text-[11px] text-muted-foreground italic">
+                        {productionMetrics.categories.addons.summaryLabel || "Condiments to Pack"}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -889,6 +1015,7 @@ export default function InventoryPrepPage() {
                   { key: "momo", label: "Momo" },
                   { key: "jhol", label: "Jhol Momo" },
                   { key: "shaphaley", label: "Shaphaley" },
+                  { key: "addons", label: "Add-ons & Dips" },
                 ] as const
               ).map((c) => (
                 <Button
@@ -1204,12 +1331,12 @@ export default function InventoryPrepPage() {
               </Card>
 
               {/* Addons & Condiments Prep Table */}
-              {data.addons.length > 0 && (
+              {productionMetrics.categories.addons.items.length > 0 && (
                 <Card className="border-border/80 shadow-xs overflow-hidden">
                   <CardHeader className="py-3 px-4 bg-muted/40 border-b border-border/60">
                     <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-indigo-500" />
-                      Add-ons, Chutneys & Condiments Required ({data.addons.length})
+                      <Layers className="h-3.5 w-3.5 text-cyan-500" />
+                      Add-ons, Chutneys & Condiments Required ({productionMetrics.categories.addons.items.length})
                     </CardTitle>
                   </CardHeader>
                   <Table>
@@ -1221,16 +1348,16 @@ export default function InventoryPrepPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.addons.map((a) => (
-                        <TableRow key={a.addonId}>
+                      {productionMetrics.categories.addons.items.map((a) => (
+                        <TableRow key={a.name}>
                           <TableCell className="font-medium text-foreground">
                             {a.name}
                           </TableCell>
-                          <TableCell className="text-center font-black text-indigo-600 dark:text-indigo-400 font-mono">
-                            {a.totalQuantity} units
+                          <TableCell className="text-center font-black text-cyan-600 dark:text-cyan-400 font-mono">
+                            {a.quantity} units
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground font-mono">
-                            in {a.orderCount} orders
+                            {a.orderCount ? `in ${a.orderCount} orders` : "Required"}
                           </TableCell>
                         </TableRow>
                       ))}
