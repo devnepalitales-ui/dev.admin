@@ -582,8 +582,8 @@ export default function InventoryPrepPage() {
                 title="Click to filter table below by Momo"
               >
                 <div className="flex items-center justify-between text-xs font-semibold text-foreground mb-1">
-                  <span className="flex items-center gap-1.5">
-                    🥟 Momo
+                  <span className="flex items-center gap-1.5 font-bold">
+                    Momo
                   </span>
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {productionMetrics.categories.momo.percentage}%
@@ -611,8 +611,8 @@ export default function InventoryPrepPage() {
                 title="Click to filter table below by Jhol Momo"
               >
                 <div className="flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
-                  <span className="flex items-center gap-1.5">
-                    🍲 Jhol Momo
+                  <span className="flex items-center gap-1.5 font-bold">
+                    Jhol Momo
                   </span>
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {productionMetrics.categories.jhol.percentage}%
@@ -640,8 +640,8 @@ export default function InventoryPrepPage() {
                 title="Click to filter table below by Shaphaley"
               >
                 <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
-                  <span className="flex items-center gap-1.5">
-                    🫓 Shaphaley
+                  <span className="flex items-center gap-1.5 font-bold">
+                    Shaphaley
                   </span>
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {productionMetrics.categories.shaphaley.percentage}%
@@ -682,8 +682,7 @@ export default function InventoryPrepPage() {
                 <TableBody className="text-xs">
                   {/* Row 1: Momo */}
                   <TableRow>
-                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
-                      <span className="text-base">🥟</span>
+                    <TableCell className="font-semibold text-foreground">
                       <div>
                         <span>Momo</span>
                         <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Steamed & Kothey)</span>
@@ -715,8 +714,7 @@ export default function InventoryPrepPage() {
 
                   {/* Row 2: Jhol Momo */}
                   <TableRow>
-                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
-                      <span className="text-base">🍲</span>
+                    <TableCell className="font-semibold text-foreground">
                       <div>
                         <span>Jhol Momo</span>
                         <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Spiced Soup Dumplings)</span>
@@ -748,8 +746,7 @@ export default function InventoryPrepPage() {
 
                   {/* Row 3: Shaphaley */}
                   <TableRow>
-                    <TableCell className="font-semibold text-foreground flex items-center gap-2">
-                      <span className="text-base">🫓</span>
+                    <TableCell className="font-semibold text-foreground">
                       <div>
                         <span>Shaphaley</span>
                         <span className="text-[11px] text-muted-foreground font-normal ml-1.5">(Crispy Fried Pockets)</span>
@@ -781,9 +778,8 @@ export default function InventoryPrepPage() {
 
                   {/* Summary Total Row */}
                   <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
-                    <TableCell className="text-foreground uppercase tracking-wider text-[11px] flex items-center gap-2 py-3">
-                      <span className="text-base">📊</span>
-                      <span>Total Production Run</span>
+                    <TableCell className="text-foreground uppercase tracking-wider text-[11px] py-3">
+                      Total Production Run
                     </TableCell>
                     <TableCell className="text-center font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
                       {productionMetrics.vegPlates} Veg
