@@ -181,55 +181,7 @@ export default function InventoryPrepPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12 print-container">
-      {/* Print-specific stylesheet */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 10mm 10mm 10mm 10mm;
-          }
-          html, body {
-            background: #ffffff !important;
-            color: #000000 !important;
-            font-size: 10pt !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          aside,
-          header,
-          nav,
-          [data-slot="sidebar"],
-          .no-print {
-            display: none !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .print-card {
-            border: 1px solid rgba(0, 0, 0, 0.12) !important;
-            box-shadow: none !important;
-            background: #ffffff !important;
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          tr {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          th,
-          td {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-            padding: 6px 8px !important;
-          }
-        }
-      `}</style>
-
+    <div className="space-y-6 pb-12 print:space-y-3">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div>
@@ -362,16 +314,24 @@ export default function InventoryPrepPage() {
       </Card>
 
       {/* Print-Only Title Banner */}
-      <div className="hidden print-only mb-6 border-b pb-4">
-        <h1 className="text-2xl font-black">Nepali Tales Cloud Kitchen</h1>
-        <h2 className="text-lg font-bold">Kitchen Production Order & Prep Manifest</h2>
-        <p className="text-sm">
-          Dispatch Date: <strong>{formatHumanDate(selectedDate)}</strong> • Printed at: {new Date().toLocaleTimeString("en-IN")}
-        </p>
+      <div className="hidden print:block mb-3 border-b border-border pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Nepali Tales Cloud Kitchen
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kitchen Production Order & Prep Manifest • {formatHumanDate(selectedDate)}
+            </p>
+          </div>
+          <div className="text-right text-xs font-mono text-muted-foreground">
+            Printed at: {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        </div>
       </div>
 
       {/* KPI Overview Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
         {/* Total Orders */}
         <Card className="shadow-xs border-border/80 print-card">
           <CardContent className="p-4">

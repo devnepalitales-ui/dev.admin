@@ -150,3 +150,70 @@
     filter: brightness(0) invert(1);
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+
+  /* Force pure light theme for PDF & print */
+  html,
+  body,
+  .dark {
+    color-scheme: light !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.145 0 0) !important;
+    --card: oklch(1 0 0) !important;
+    --card-foreground: oklch(0.145 0 0) !important;
+    --popover: oklch(1 0 0) !important;
+    --popover-foreground: oklch(0.145 0 0) !important;
+    --muted: oklch(0.97 0 0) !important;
+    --muted-foreground: oklch(0.45 0 0) !important;
+    --border: oklch(0.88 0 0) !important;
+    --input: oklch(0.88 0 0) !important;
+    --primary: oklch(0.205 0 0) !important;
+    --primary-foreground: oklch(0.985 0 0) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, buttons and screen-only controls */
+  aside,
+  header,
+  nav,
+  button,
+  [data-slot="sidebar"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Prevent table container from clipping horizontally */
+  [data-slot="table-container"],
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Clean shadcn cards on print */
+  [data-slot="card"] {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Prevent rows from splitting across pages */
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+}
