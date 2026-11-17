@@ -216,16 +216,8 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
                 </td>
               </tr>
               <tr>
-                <td style="text-align: left; font-weight: 700; vertical-align: top;">
-                  Ph: ${b.customer.phone || "—"}
-                </td>
-                <td style="text-align: right; vertical-align: top;">
-                  ${formattedDate}
-                </td>
-              </tr>
-              <tr>
                 <td style="text-align: left; vertical-align: top;">
-                  Order #: ${b.order.orderNumber}
+                  Date: ${formattedDate}
                 </td>
                 <td style="text-align: right; vertical-align: top;">
                   Time: ${formattedTime}
@@ -428,19 +420,11 @@ export function KitchenBillModal({ orderId, open, onOpenChange }: KitchenBillMod
                   </td>
                 </tr>
                 <tr>
-                  <td className="text-left font-semibold align-top pb-0.5">
-                    Ph: {bill.customer.phone || "—"}
-                  </td>
-                  <td className="text-right align-top pb-0.5 whitespace-nowrap">
-                    {formattedDate}
-                  </td>
-                </tr>
-                <tr>
                   <td className="text-left align-top pb-0.5">
-                    Order #: {bill.order.orderNumber}
+                    Date: {formattedDate}
                   </td>
                   <td className="text-right align-top pb-0.5 whitespace-nowrap">
-                    {formattedTime}
+                    Time: {formattedTime}
                   </td>
                 </tr>
                 <tr>
