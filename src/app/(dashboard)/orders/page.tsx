@@ -904,25 +904,43 @@ export default function OrdersPage() {
                 ) : orders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-36 text-center text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center space-y-1">
-                        <UtensilsCrossed className="h-6 w-6 text-muted-foreground/40 mb-1" />
-                        <p className="text-sm font-medium">No orders found on {formattedDateDisplay}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {statusTab !== "all"
-                            ? `No orders matching status filter "${statusTab}". Try switching to "All Orders".`
-                            : isToday
-                            ? "Incoming orders from customers will appear here automatically."
-                            : "Select another date from the calendar or click Today."}
-                        </p>
-                        {!isToday && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="mt-3 text-xs"
-                            onClick={() => setSelectedDate(new Date())}
-                          >
-                            View Today&apos;s Live Orders
-                          </Button>
+                      <div className="flex flex-col items-center justify-center space-y-1 py-4">
+                        {statusTab === "cancelled" ? (
+                          <>
+                            <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-1 text-emerald-500">
+                              <CheckCircle2 className="h-6 w-6" />
+                            </div>
+                            <p className="text-sm font-semibold text-foreground">
+                              Woah, no cancelled orders!
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {isToday
+                                ? "Zero cancellations today! All orders are running smoothly in the kitchen."
+                                : `Zero cancellations recorded on ${formattedDateDisplay}.`}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <UtensilsCrossed className="h-6 w-6 text-muted-foreground/40 mb-1" />
+                            <p className="text-sm font-medium">No orders found on {formattedDateDisplay}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {statusTab !== "all"
+                                ? `No orders matching status filter "${statusTab}". Try switching to "All Orders".`
+                                : isToday
+                                ? "Incoming orders from customers will appear here automatically."
+                                : "Select another date from the calendar or click Today."}
+                            </p>
+                            {!isToday && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-3 text-xs"
+                                onClick={() => setSelectedDate(new Date())}
+                              >
+                                View Today&apos;s Live Orders
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>
