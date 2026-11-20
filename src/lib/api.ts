@@ -828,6 +828,7 @@ export interface OrdersListResponse {
     ready: number;
     outForDelivery?: number;
     delivered?: number;
+    cancelled?: number;
   };
 }
 

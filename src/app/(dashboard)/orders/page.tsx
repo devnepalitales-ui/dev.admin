@@ -248,6 +248,7 @@ export default function OrdersPage() {
     ready: 0,
     outForDelivery: 0,
     delivered: 0,
+    cancelled: 0,
   });
 
   const fetchOrders = useCallback(
@@ -269,6 +270,7 @@ export default function OrdersPage() {
             ready: res.counts.ready || 0,
             outForDelivery: res.counts.outForDelivery || 0,
             delivered: res.counts.delivered || 0,
+            cancelled: res.counts.cancelled || 0,
           });
         }
       } catch (err: any) {
@@ -850,6 +852,13 @@ export default function OrdersPage() {
             <TabsTrigger value="delivered" className="text-xs">
               Delivered
               <span className="ml-1 opacity-70">({counts.delivered})</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="cancelled"
+              className="text-xs text-rose-400 hover:text-rose-300 data-[state=active]:bg-rose-500/15 data-[state=active]:text-rose-400"
+            >
+              Cancelled
+              <span className="ml-1 opacity-70">({counts.cancelled})</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
