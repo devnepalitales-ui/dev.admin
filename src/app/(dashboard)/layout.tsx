@@ -5,8 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { OrderEventsProvider } from "@/hooks/use-order-events";
 import { OrderAudioControl } from "@/components/order-audio-control";
-import { PushNotificationControl } from "@/components/push-notification-control";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import {
   Sidebar,
   SidebarContent,
@@ -179,12 +177,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <PushNotificationControl />
               <OrderAudioControl />
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">{children}</main>
-          <MobileBottomNav />
+          <main className="flex-1 p-4 md:p-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>
     </OrderEventsProvider>

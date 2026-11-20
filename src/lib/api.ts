@@ -1286,41 +1286,5 @@ export async function getInventoryPrep(date?: string, options?: RequestOptions) 
   });
 }
 
-// ─── Web Push & PWA Notifications ───────────────────────────────
-
-export async function getVapidPublicKey(): Promise<{ success: boolean; publicKey: string }> {
-  return request<{ success: boolean; publicKey: string }>("/push/vapid-public-key", {
-    forceRefresh: true,
-  });
-}
-
-export async function subscribeAdminPush(subscription: {
-  endpoint: string;
-  keys: { p256dh: string; auth: string };
-  userAgent?: string;
-}): Promise<{ success: boolean; message: string }> {
-  return request<{ success: boolean; message: string }>("/push/subscribe", {
-    method: "POST",
-    body: JSON.stringify(subscription),
-  });
-}
-
-export async function unsubscribeAdminPush(endpoint: string): Promise<{ success: boolean; message: string }> {
-  return request<{ success: boolean; message: string }>("/push/unsubscribe", {
-    method: "POST",
-    body: JSON.stringify({ endpoint }),
-  });
-}
-
-export async function sendTestAdminPush(subscription?: {
-  endpoint: string;
-  keys: { p256dh: string; auth: string };
-}): Promise<{ success: boolean; message: string }> {
-  return request<{ success: boolean; message: string }>("/push/test", {
-    method: "POST",
-    body: JSON.stringify(subscription || {}),
-  });
-}
-
 export { ApiError };
 
